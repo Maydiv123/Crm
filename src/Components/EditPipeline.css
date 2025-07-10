@@ -1,0 +1,261 @@
+.editpipeline-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.32);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.editpipeline-modal {
+  background: #1b2a36;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  min-width: 800px;
+  max-width: 98vw;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+.editpipeline-close {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  font-size: 2rem;
+  color: #e0e6ed;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 3100;
+  transition: color 0.2s;
+}
+.editpipeline-close:hover {
+  color: #ff6b81;
+}
+.editpipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 32px 0 32px;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.editpipeline-header button {
+  margin-left: 12px;
+}
+.editpipeline-cancel {
+  background: none;
+  color: #7fd7ff;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  margin-right: 8px;
+}
+.editpipeline-save {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 24px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.editpipeline-save:hover {
+  background: #159c85;
+}
+.editpipeline-content {
+  display: flex;
+  flex-direction: row;
+  padding: 0 0 32px 0;
+  min-height: 400px;
+}
+.editpipeline-sidebar {
+  width: 220px;
+  background: #18304a;
+  border-radius: 0 0 0 18px;
+  padding: 32px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.editpipeline-sidebar-title {
+  color: #b6e0fe;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0 24px 16px 32px;
+}
+.editpipeline-sidebar-item {
+  color: #e0e6ed;
+  font-size: 1rem;
+  padding: 12px 32px;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  width: 69%;
+  transition: background 0.2s, border 0.2s, color 0.2s;
+}
+.editpipeline-sidebar-item.active, .editpipeline-sidebar-item:hover {
+  background: #22303c;
+  color: #7fd7ff;
+  border-left: 4px solid #7fd7ff;
+}
+.editpipeline-main {
+  flex: 1;
+  padding: 32px 32px 0 32px;
+  display: flex;
+  flex-direction: column;
+  color: #e0e6ed;
+}
+.editpipeline-section {
+  margin-bottom: 28px;
+}
+.editpipeline-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #7fd7ff;
+  margin-bottom: 8px;
+}
+.editpipeline-section-desc {
+  color: #b6e0fe;
+  font-size: 0.98rem;
+  margin-top: 6px;
+}
+.editpipeline-input {
+  background: #22303c;
+  color: #e0e6ed;
+  border: 1px solid #2c3e50;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  margin-bottom: 2px;
+  outline: none;
+  width: 100%;
+  margin-top: 4px;
+}
+.editpipeline-stages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.editpipeline-stage {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 10px 18px;
+  margin-bottom: 2px;
+  background: #22303c;
+  color: #17404e;
+  gap: 10px;
+  position: relative;
+}
+.editpipeline-stage-blue {
+  background: #e3f1ff;
+  color: #17404e;
+}
+.editpipeline-stage-yellow {
+  background: #fff9c4;
+  color: #17404e;
+}
+.editpipeline-stage-orange {
+  background: #ffe0b2;
+  color: #17404e;
+}
+.editpipeline-stage-pink {
+  background: #ffd6d6;
+  color: #17404e;
+}
+.editpipeline-stage-green {
+  background: #e0ffd6;
+  color: #17404e;
+}
+.editpipeline-stage-grey {
+  background: #f0f0f0;
+  color: #17404e;
+}
+.editpipeline-drag {
+  font-size: 1.2em;
+  color: #bdbdbd;
+  margin-right: 10px;
+  cursor: grab;
+}
+.editpipeline-addstage {
+  background: none;
+  color: #1abc9c;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 2px;
+  padding: 0 0 0 2px;
+  transition: color 0.2s;
+}
+.editpipeline-addstage:hover {
+  color: #159c85;
+}
+.editpipeline-stage-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.editpipeline-stage-edit {
+  color: #888;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: color 0.2s;
+}
+.editpipeline-stage-edit:hover {
+  color: #1abc9c;
+}
+.editpipeline-stage-delete {
+  color: #888;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.editpipeline-stage-delete:hover {
+  color: #e74c3c;
+}
+.editpipeline-color-palette {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  background: #22303c;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  padding: 10px 12px 8px 12px;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  z-index: 10;
+}
+.editpipeline-color-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-block;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border 0.2s, box-shadow 0.2s;
+  margin: 0 auto;
+}
+.editpipeline-color-dot:hover {
+  border: 2px solid #1abc9c;
+  box-shadow: 0 0 0 2px #1abc9c33;
+}
