@@ -1,5 +1,6 @@
 import React from "react";
 import "./Introduction.css";
+import { useNavigate } from "react-router-dom";
 import dashboardIcon from "../assets/dashboard.png";
 import whatsappIcon from "../assets/whatsapp.png";
 import mailIcon from "../assets/email.png";
@@ -10,13 +11,14 @@ const user2 = "https://randomuser.me/api/portraits/men/44.jpg";
 const chatSample = "https://dummyimage.com/400x250/ede9fe/1a1446&text=Chat+UI";
 
 const Introduction = () => {
+  const navigate = useNavigate();
   return (
     <div className="intro-container enhanced-bg">
       <header className="intro-header">
         <div className="intro-logo">YourCRM</div>
         <div className="intro-auth-options">
-          <button className="intro-login prominent">Login</button>
-          <button className="intro-signup prominent">Signup</button>
+          <button className="intro-login prominent" onClick={() => navigate("/login")}>Login</button>
+          <button className="intro-signup prominent" onClick={() => navigate("/signup")}>Signup</button>
         </div>
       </header>
       <main className="intro-main">

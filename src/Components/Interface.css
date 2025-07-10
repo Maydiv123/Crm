@@ -195,20 +195,38 @@ html, body, #root {
   gap: 24px;
   background: #f7f8fa;
   overflow-x: auto;
+  overflow-y: visible;
+  height: auto;
+  scrollbar-width: none;
+}
+.crm-pipeline::-webkit-scrollbar {
+  display: none;
 }
 
 .crm-pipeline-stage {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 0;
+  min-width: 240px;
   max-width: 260px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 18px 12px 32px 12px;
   border-top: 4px solid #1abc9c;
+  height: auto;
+  min-height: 0;
+  margin-bottom: 24px;
+  gap: 12px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+}
+.crm-pipeline-stage::-webkit-scrollbar {
+  display: none;
 }
 
 .crm-pipeline-stage-title {
@@ -262,6 +280,8 @@ html, body, #root {
   font-size: 1rem;
   margin-bottom: 2px;
   background: #fff;
+  color: #1abc9c;
+  width: 172px;
 }
 
 .crm-quickadd-form input:focus {
@@ -531,6 +551,7 @@ html, body, #root {
   background: #fff;
   outline: none;
   transition: border 0.2s;
+  color: #1abc9c;
 }
 
 .crm-leads-sidebar-addinput:focus {
@@ -646,6 +667,7 @@ html, body, #root {
   background: #fff;
   color: #17404e;
   margin-bottom: 18px;
+  width: 122px;
 }
 .crm-modal-input:focus, select.crm-modal-input:focus {
   outline: 1.5px solid #1abc9c;
@@ -719,7 +741,7 @@ html, body, #root {
   margin-bottom: 2px;
 }
 .crm-modal-input {
-  width: 100%;
+  width: 92%;
   padding: 7px 10px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
@@ -991,6 +1013,10 @@ html, body, #root {
   flex-direction: column;
   gap: 6px;
   min-width: 180px;
+  margin-bottom: 12px;
+  min-height: unset;
+  height: auto;
+  justify-content: flex-start;
 }
 .crm-lead-card-title {
   color: #1abc9c;
@@ -1152,6 +1178,7 @@ html, body, #root {
   background: #fff;
   outline: none;
   transition: border 0.2s;
+  color: #1abc9c;
 }
 .crm-leadmodal-detailsgrid input:focus {
   border-bottom: 2px solid #159c85;
@@ -1220,7 +1247,7 @@ html, body, #root {
   background: #fff;
   outline: none;
   min-width: 120px;
-  color: black;
+  color: #1abc9c;
 }
 .crm-leadmodal-setuptype {
   padding: 6px 10px;

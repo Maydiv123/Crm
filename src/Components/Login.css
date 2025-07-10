@@ -1,0 +1,206 @@
+.login-split-container {
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  align-items: stretch;
+  background: #f4f7fa;
+}
+
+.login-left-panel {
+  flex: 1 1 0;
+  background: linear-gradient(135deg, #2ec492 0%, #38b2ac 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 2.5rem;
+  position: relative;
+  min-width: 340px;
+  height: 100vh;
+  box-shadow: 0 8px 32px 0 rgba(46, 196, 146, 0.10);
+  clip-path: path('M0,0 Q60,100 200,0 Q400,100 600,0 Q800,100 1000,0 L1000,1000 L0,1000 Z');
+  overflow: hidden;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+.login-left-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='200%' height='200%' viewBox='0 0 200 200' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200%' height='200%' fill='none'/%3E%3Ccircle cx='100' cy='100' r='80' fill='%23ffffff0d'/%3E%3C/svg%3E");
+  opacity: 0.13;
+  z-index: 0;
+}
+.login-crm-title {
+  font-size: 3.2rem;
+  font-weight: 900;
+  margin-bottom: 1.1rem;
+  letter-spacing: 2.5px;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.10);
+  z-index: 1;
+}
+.login-crm-subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+  color: #e6f9f3;
+  text-align: center;
+  z-index: 1;
+}
+.login-crm-tagline {
+  font-size: 1.05rem;
+  font-weight: 400;
+  margin-bottom: 1.2rem;
+  color: #d1fae5;
+  text-align: center;
+  z-index: 1;
+}
+.login-crm-desc {
+  font-size: 1rem;
+  max-width: 340px;
+  color: #e6f9f3;
+  text-align: center;
+  z-index: 1;
+}
+
+.login-right-panel {
+  flex: 1 1 0;
+  background: #fff;
+  display: flex;
+  /* align-items: center; */
+  justify-content: center;
+  border-radius: 0 0 0 0;
+  height: 100vh;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 350px;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #38b2ac;
+  margin-bottom: 2.2rem;
+  text-align: center;
+}
+
+.login-input-group {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: #f4f7fa;
+  border-radius: 8px;
+  margin-bottom: 1.2rem;
+  border: 1.5px solid #e0e7ff;
+  padding: 0.2rem 0.8rem;
+}
+.login-input-icon {
+  font-size: 1.2rem;
+  color: #38b2ac;
+  margin-right: 0.7rem;
+}
+.login-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 0.9rem 0;
+  outline: none;
+  color: #222;
+}
+
+.login-options-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.7rem;
+  font-size: 0.98rem;
+}
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #6c6a8a;
+  font-size: 0.98rem;
+}
+.login-forgot {
+  color: #38b2ac;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.login-forgot:hover {
+  color: #2ec492;
+  text-decoration: underline;
+}
+
+.login-btn-green {
+  width: 100%;
+  background: linear-gradient(90deg, #2ec492 0%, #38b2ac 100%);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  padding: 0.95rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  margin-top: 0.2rem;
+  box-shadow: 0 2px 16px 0 rgba(46, 196, 146, 0.10);
+  transition: background 0.2s, transform 0.15s;
+}
+.login-btn-green:hover {
+  background: linear-gradient(90deg, #38b2ac 0%, #2ec492 100%);
+  transform: scale(1.03);
+}
+
+.login-lottie-wrapper {
+  width: 500px;
+  height: 400px;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.login-right-panel.login-form-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.login-right-panel.login-form-center .login-form {
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .login-split-container {
+    flex-direction: column;
+  }
+  .login-left-panel, .login-right-panel {
+    flex: unset;
+    width: 100%;
+    border-radius: 0;
+    padding: 2rem 1.2rem;
+  }
+  .login-left-panel {
+    align-items: center;
+    text-align: center;
+    border-radius: 0 0 40px 40px;
+  }
+}

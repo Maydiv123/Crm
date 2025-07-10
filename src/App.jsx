@@ -1,10 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Interface from './Components/Interface';
 import Dashboard from './Components/Dashboard';
 import Calendar from './Components/Calendar';
 import Change from './Components/Change';
 import Introduction from './Components/Introduction';
+import Login from './Components/Login';
+import Signup from './Components/Signup';
 import './Components/Change.css';
 import dashboardIcon from './assets/dashboard.png';
 import leadsIcon from './assets/user-engagement.png';
@@ -15,6 +18,7 @@ import listsIcon from './assets/list.png';
 import mailIcon from './assets/email.png';
 import statsIcon from './assets/stats.png';
 import settingsIcon from './assets/setting.png';
+import { FiLogOut } from 'react-icons/fi';
 
 const sidebarItems = [
   { icon: dashboardIcon, label: "Dashboard", path: "/dashboard" },
@@ -28,13 +32,31 @@ const sidebarItems = [
   { icon: settingsIcon, label: "Settings", path: "/settings" },
 ];
 
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
 function AppLayout() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const currentPath = window.location.pathname;
-  const isIntro = currentPath === "/";
+  const isNoSidebar = ["/", "/login", "/signup"].includes(currentPath);
+  
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+  
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      {!isIntro && (
+      {!isNoSidebar && (
         <aside className="crm-sidebar">
           <div className="crm-logo">A</div>
           <nav>
@@ -52,15 +74,53 @@ function AppLayout() {
               </Link>
             ))}
           </nav>
+          <div style={{ marginTop: 'auto', padding: '20px' }}>
+            <button 
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: '#ff4757',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <FiLogOut style={{ fontSize: '1.3em' }} />
+            
+            </button>
+          </div>
         </aside>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <Routes>
           <Route path="/" element={<Introduction />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leads" element={<Interface navigate={navigate} />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/leads/:leadId" element={<Change />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/leads" element={
+            <ProtectedRoute>
+              <Interface navigate={navigate} />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <Calendar />
+            </ProtectedRoute>
+          } />
+          <Route path="/leads/:leadId" element={
+            <ProtectedRoute>
+              <Change />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </div>
@@ -69,8 +129,18 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <Router>
-      <AppLayout />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppLayout />
+      </Router>
+      <style>{`
+        /* Hide all scrollbars but keep scrolling functional */
+        ::-webkit-scrollbar { display: none !important; }
+        html, body, * {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+      `}</style>
+    </AuthProvider>
   );
 }

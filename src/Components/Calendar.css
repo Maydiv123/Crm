@@ -635,6 +635,21 @@
 .calendar-filter-input:focus {
   border: 1.5px solid #1abc9c;
 }
+.calendar-day-toolbar, .calendar-week-toolbar, .calendar-month-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.calendar-week-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-day-date, .calendar-month-label, .calendar-week-range {
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
 @media (max-width: 900px) {
   .calendar-header {
     flex-direction: column;

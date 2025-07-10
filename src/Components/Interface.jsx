@@ -60,13 +60,28 @@ function AdvancedFieldForm({ onCancel }) {
 
 function QuickAddForm({ onCancel, onAdd, onSettings }) {
   const [form, setForm] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let newValue = value;
+    if (name === 'amount') {
+      newValue = newValue.replace(/[^0-9]/g, '');
+    } else if (["name", "contactName", "companyName"].includes(name)) {
+      newValue = newValue.replace(/[^a-zA-Z ]/g, '');
+    }
+    setForm({ ...form, [name]: newValue });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    let newErrors = {};
+    if (!/^[a-zA-Z ]+$/.test(form.name)) newErrors.name = 'Only alphabets allowed';
+    if (!/^[a-zA-Z ]+$/.test(form.contactName)) newErrors.contactName = 'Only alphabets allowed';
+    if (!/^[a-zA-Z ]+$/.test(form.companyName)) newErrors.companyName = 'Only alphabets allowed';
+    if (!/^[0-9]+$/.test(form.amount)) newErrors.amount = 'Only numbers allowed';
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
     onAdd(form);
     setForm(initialFormState);
   };
@@ -75,11 +90,15 @@ function QuickAddForm({ onCancel, onAdd, onSettings }) {
     <form className="crm-quickadd-form" onSubmit={handleSubmit}>
       <div className="crm-quickadd-form-fields">
         <input name="name" value={form.name} onChange={handleChange} placeholder="Name" />
+        {errors.name && <div style={{color:'red',fontSize:'0.9em'}}>{errors.name}</div>}
         <input name="amount" value={form.amount} onChange={handleChange} placeholder="₹0" />
+        {errors.amount && <div style={{color:'red',fontSize:'0.9em'}}>{errors.amount}</div>}
         <input name="contactName" value={form.contactName} onChange={handleChange} placeholder="Contact: Name" />
+        {errors.contactName && <div style={{color:'red',fontSize:'0.9em'}}>{errors.contactName}</div>}
         <input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="Contact: Phone" />
         <input name="contactEmail" value={form.contactEmail} onChange={handleChange} placeholder="Contact: Email" />
         <input name="companyName" value={form.companyName} onChange={handleChange} placeholder="Company: Name" />
+        {errors.companyName && <div style={{color:'red',fontSize:'0.9em'}}>{errors.companyName}</div>}
         <input name="companyAddress" value={form.companyAddress} onChange={handleChange} placeholder="Company: Address" />
       </div>
       <div className="crm-quickadd-form-bottom">
@@ -87,6 +106,8 @@ function QuickAddForm({ onCancel, onAdd, onSettings }) {
           <button type="submit" className="crm-quickadd-add">Add</button>
           <button type="button" className="crm-quickadd-cancel" onClick={onCancel}>Cancel</button>
         </div>
+      </div>
+      <div style={{marginTop:'8px',textAlign:'right'}}>
         <button type="button" className="crm-quickadd-settings" onClick={onSettings}>
           Settings <span className="crm-quickadd-gear">⚙️</span>
         </button>
@@ -193,7 +214,19 @@ function LeadModal({ onClose, onAdd, pipelines, selectedPipelineIndex, initialSt
                 <div className="crm-leadmodal-label">Company</div>
                 <input name="companyName" value={form.companyName} onChange={handleChange} placeholder="Company name" />
                 <div className="crm-leadmodal-label">Work phone</div>
-                <input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="..." />
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ padding: '6px 8px', background: '#f7f8fa', border: '1px solid #e0e0e0', borderRight: 'none', borderRadius: '4px 0 0 4px', color: '#888', fontSize: '1rem' }}>+91</span>
+                  <input
+                    name="contactPhone"
+                    value={form.contactPhone}
+                    onChange={handleChange}
+                    placeholder="Enter phone"
+                    style={{ borderRadius: '0 4px 4px 0', borderLeft: 'none' }}
+                    maxLength={10}
+                    pattern="\d{10}"
+                    required
+                  />
+                </div>
                 <div className="crm-leadmodal-label">Work email</div>
                 <input name="contactEmail" value={form.contactEmail} onChange={handleChange} placeholder="..." />
                 <div className="crm-leadmodal-label">Position</div>
@@ -297,8 +330,8 @@ export default function Interface({ onSidebarNav, navigate }) {
         "Discussions",
         "Decision Making",
         "Contract Discussion",
-        "Closed - won",
-        "Closed - lost",
+        "Deal - won",
+        "Deal - lost",
       ],
     },
   ]);
@@ -362,19 +395,19 @@ export default function Interface({ onSidebarNav, navigate }) {
     for(let i=1;i<=daysInMonth;i++) days.push(i);
     return (
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginBottom:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',width:220,marginBottom:4}}>
+        <div style={{display:'flex',justifyContent:'space-between',width:294,marginBottom:4}}>
           <button onClick={()=>setTodoDate(new Date(year, month-1, 1))}>&lt;</button>
           <span style={{fontWeight:600}}>{d.toLocaleString('default',{month:'long'})} {year}</span>
           <button onClick={()=>setTodoDate(new Date(year, month+1, 1))}>&gt;</button>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,width:220}}>
-          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(day=>(<div key={day} style={{fontWeight:600,fontSize:13,textAlign:'center'}}>{day}</div>))}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,width:294,margin:'0 auto'}}>
+          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(day=>(<div key={day} style={{fontWeight:600,fontSize:13,textAlign:'center',minWidth:40}}>{day}</div>))}
           {days.map((day,i)=>(
-            <div key={i} style={{height:28,textAlign:'center'}}>
+            <div key={i} style={{height:36,textAlign:'center',minWidth:40}}>
               {day ? (
                 <button
                   style={{
-                    width:26,height:26,borderRadius:6,border:'none',background: day===d.getDate()?'#1abc9c':'#e0e0e0',color: day===d.getDate()?'#fff':'#17404e',cursor:'pointer',fontWeight:600
+                    width:34,height:34,borderRadius:6,padding:10,border:'none',background: day===d.getDate()?'#1abc9c':'#e0e0e0',color: day===d.getDate()?'#fff':'#17404e',cursor:'pointer',fontWeight:600,fontSize:'1rem'
                   }}
                   onClick={()=>{
                     const newDate = new Date(todoDate);
@@ -920,7 +953,7 @@ export default function Interface({ onSidebarNav, navigate }) {
         </header>
         {showListSettings ? (
           <div className="crm-action-bar">
-            <button className="crm-action-btn" aria-label="Reassign" onClick={() => setShowReassignModal(true)}><FaUserCheck style={{marginRight:8}}/>Reassign</button>
+            <button className="crm-action-btn" aria-label="Reassign" onClick={() => setShowReassignModal(true)}><FaUserCheck style={{marginRight:8}}/>Re-Assign</button>
             <button className="crm-action-btn" aria-label="Add to-do" onClick={() => setShowAddTodoModal(true)}><FaPlusSquare style={{marginRight:8}}/>Add To-Do</button>
             <button className="crm-action-btn" aria-label="Change stage" onClick={() => setShowChangeStageModal(true)}><FaExchangeAlt style={{marginRight:8}}/>Change Stage</button>
             <button className="crm-action-btn" aria-label="Delete" onClick={() => setShowDeleteModal(true)}><FaTrash style={{marginRight:8}}/>Delete</button>
@@ -947,7 +980,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                 showAdvanced ? (
                   <AdvancedFieldForm onCancel={handleCancel} />
                 ) : (
-                  <QuickAddForm onCancel={handleCancel} onAdd={handleAdd} onSettings={handleSettings} />
+                  <QuickAddForm onCancel={handleCancel} onAdd={(form) => handleAdd(form, stage)} onSettings={handleSettings} />
                 )
               ) : (
                 <div className="crm-quick-add" onClick={() => handleQuickAddClick(idx)}>

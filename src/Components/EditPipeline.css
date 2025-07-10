@@ -185,6 +185,20 @@
   background: #f0f0f0;
   color: #17404e;
 }
+.editpipeline-stage-cyan { background: #b2f7f7; color: #17404e; }
+.editpipeline-stage-purple { background: #e3b2f7; color: #17404e; }
+.editpipeline-stage-red { background: #ffb2b2; color: #17404e; }
+.editpipeline-stage-teal { background: #b2ffe3; color: #17404e; }
+.editpipeline-stage-lime { background: #eaffb2; color: #17404e; }
+.editpipeline-stage-violet { background: #d6b2ff; color: #17404e; }
+.editpipeline-stage-deepblue { background: #b2d6ff; color: #17404e; }
+.editpipeline-stage-deepgreen { background: #b2ffd6; color: #17404e; }
+.editpipeline-stage-deepyellow { background: #fff7b2; color: #17404e; }
+.editpipeline-stage-deeppink { background: #ffb2e3; color: #17404e; }
+.editpipeline-stage-deepgrey { background: #d6d6d6; color: #17404e; }
+.editpipeline-stage-deeporange { background: #ffdcb2; color: #17404e; }
+.editpipeline-stage-deepred { background: #ffb2b2; color: #17404e; }
+.editpipeline-stage-deepteal { background: #b2fff7; color: #17404e; }
 .editpipeline-drag {
   font-size: 1.2em;
   color: #bdbdbd;

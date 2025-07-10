@@ -211,8 +211,12 @@
   margin: 12px 0 8px 0;
   color: #e3e8ee;
   font-weight: 600;
+  height: 36px;
 }
 .ntm2-cal-header button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #1a2330;
   color: #b0b7c3;
   border: none;

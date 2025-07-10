@@ -35,8 +35,8 @@ const templates = [
       { label: "Contract discussion", color: "pink" },
     ],
     closedStages: [
-      { label: "Closed - won", color: "green" },
-      { label: "Closed - lost", color: "grey" },
+      { label: "Deal - won", color: "green" },
+      { label: "Deal - lost", color: "grey" },
     ],
   },
   {
@@ -145,6 +145,7 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
   const pencilRefs = useRef([]);
   const [addingStage, setAddingStage] = useState(false);
   const [newStageName, setNewStageName] = useState("");
+  const [newStageColor, setNewStageColor] = useState("blue");
 
   useEffect(() => {
     if (editingColorIdx === null) return;
@@ -199,6 +200,7 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
   const handleAddStageClick = () => {
     setAddingStage(true);
     setNewStageName("");
+    setNewStageColor("blue");
     setEditingColorIdx(template.activeStages.length); // open color picker for new stage
   };
 
@@ -215,7 +217,7 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
           ...tpl,
           activeStages: [
             ...tpl.activeStages,
-            { label: newStageName, color: "blue" },
+            { label: newStageName, color: newStageColor },
           ],
         };
       });
@@ -223,6 +225,7 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
     });
     setAddingStage(false);
     setNewStageName("");
+    setNewStageColor("blue");
     setEditingColorIdx(null);
   };
 
@@ -241,8 +244,8 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
     // Convert templateData[selectedTemplate] to pipelines format
     let newStages = templateData[selectedTemplate].activeStages.map(s => s.label);
     // Always append 'Closed - won' and 'Closed - lost' if not present
-    if (!newStages.includes('Closed - won')) newStages.push('Closed - won');
-    if (!newStages.includes('Closed - lost')) newStages.push('Closed - lost');
+    if (!newStages.includes('Deal - won')) newStages.push('Deal - won');
+    if (!newStages.includes('Deal - lost')) newStages.push('Deal - lost');
     const newPipeline = {
       ...pipelines[0], // keep name, etc.
       stages: newStages,
@@ -309,7 +312,7 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
                   </div>
                 ))}
                 {addingStage && (
-                  <div className={"editpipeline-stage " + colorClass["blue"]}>
+                  <div className={"editpipeline-stage " + colorClass[newStageColor]}>
                     <span className="editpipeline-drag">⋮⋮</span>
                     <input
                       className="editpipeline-input"
@@ -334,8 +337,8 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
                           <span
                             key={c.name}
                             className="editpipeline-color-dot"
-                            style={{ background: c.code, border: 'blue' === c.name ? '2px solid #333' : '2px solid transparent' }}
-                            // Color selection for new stage (before save): just set default color for now
+                            style={{ background: c.code, border: newStageColor === c.name ? '2px solid #333' : '2px solid transparent' }}
+                            onClick={() => setNewStageColor(c.name)}
                           />
                         ))}
                       </div>
@@ -347,8 +350,8 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
             </div>
             <div className="editpipeline-section">
               <div className="editpipeline-section-title">Closed stages</div>
-              <div className={"editpipeline-stage " + colorClass["green"]}>Closed - won</div>
-              <div className={"editpipeline-stage " + colorClass["grey"]}>Closed - lost</div>
+              <div className={"editpipeline-stage " + colorClass["green"]}>Deal - won</div>
+              <div className={"editpipeline-stage " + colorClass["grey"]}>Deal - lost</div>
             </div>
           </div>
         </div>

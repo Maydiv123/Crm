@@ -1,0 +1,26 @@
+@import './Login.css';
+
+.signup-section {
+  margin-bottom: 2.2rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid #e0e7ff;
+  
+
+}
+.signup-section:last-child {
+  border-bottom: none;
+}
+.signup-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #38b2ac;
+  margin-bottom: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.signup-section-note {
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #6c6a8a;
+}
