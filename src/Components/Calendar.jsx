@@ -187,6 +187,13 @@ const Calendar = () => {
               <div className="calendar-week-days-cols">
                 {weekDates.map((d, i) => (
                   <div className="calendar-week-day-col" key={i}>
+                    {/* Show tasks for this day at the top */}
+                    {tasks.filter(t => t.due_date && t.due_date.slice(0,10) === d.toISOString().slice(0,10))
+                      .map(task => (
+                        <div key={task.id} className="calendar-task-item" style={{fontSize: '0.95em', margin: '2px 0'}}>
+                          <b>{task.title}</b><br/>{task.description}
+                        </div>
+                    ))}
                     {timeSlots.map((_, j) => (
                       <div className="calendar-week-cell" key={j}></div>
                     ))}

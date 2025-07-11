@@ -273,6 +273,7 @@
   flex-direction: row;
   width: 100%;
   min-width: 0;
+  color: black;
 }
 .calendar-week-day-col {
   flex: 1 1 0;
@@ -329,6 +330,7 @@
   border-radius: 0 0 16px 16px;
   box-shadow: 0 2px 8px #1abc9c11;
   margin-right: 48px;
+  color: black;
 }
 .calendar-day-header {
   text-align: center;
