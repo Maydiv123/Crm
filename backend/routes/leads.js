@@ -77,6 +77,7 @@ router.post('/', auth, [
   body('name', 'Name is required').not().isEmpty(),
   body('stage', 'Stage is required').not().isEmpty()
 ], async (req, res) => {
+  console.log('Create lead request body:', req.body); // Debug log
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

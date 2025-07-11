@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaCheck, FaTrash } from "react-icons/fa";
 import "./Automate.css";
+import api from '../services/api';
 
 const defaultColumns = [
   { key: "initialContact", label: "Initial Contact", hint: null, isDefault: true },
@@ -48,6 +49,15 @@ export default function Automate({ onBack }) {
   const [editValue, setEditValue] = useState("");
   const [hintsModalIdx, setHintsModalIdx] = useState(null);
   const [hintsDraft, setHintsDraft] = useState({ beginner: "", intermediate: "", expert: "" });
+
+  // Fetch pipeline config from backend on mount
+  useEffect(() => {
+    api.get('/pipeline').then(res => {
+      if (res.data && res.data.columns && res.data.columns.length > 0) {
+        setColumns(res.data.columns);
+      }
+    });
+  }, []);
 
   const handlePlusClick = (idx) => {
     // Insert a new column after idx, set it to edit mode
@@ -131,6 +141,11 @@ export default function Automate({ onBack }) {
     setHintsModalIdx(null);
   };
 
+  const handleSave = async () => {
+    await api.post('/pipeline', { columns });
+    alert('Pipeline saved!');
+  };
+
   return (
     <div className="automate-container">
       <aside className="automate-sidebar">
@@ -163,7 +178,7 @@ export default function Automate({ onBack }) {
       <main className="automate-main">
         <div className="automate-main-header">
           <button className="automate-back-btn" onClick={onBack}>Back</button>
-          <button className="automate-save-btn">Save</button>
+          <button className="automate-save-btn" onClick={handleSave}>Save</button>
         </div>
         <div className="automate-kanban-wrapper">
           <div className="automate-kanban">

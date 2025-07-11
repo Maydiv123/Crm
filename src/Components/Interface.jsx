@@ -5,6 +5,8 @@ import ActiveLead from "./ActiveLead";
 import { FaBars, FaChevronDown, FaPlus, FaCheck, FaEllipsisV, FaBroadcastTower, FaEdit, FaPrint, FaCogs, FaArrowDown, FaArrowUp, FaClone, FaUserCheck, FaPlusSquare, FaExchangeAlt, FaTrash, FaTags, FaTimes, FaCalendarAlt, FaCheck as FaCheckIcon } from "react-icons/fa";
 import "./Interface.css";
 import EditPipeline from "./EditPipeline";
+import { leadsAPI } from '../services/api';
+import { pipelineAPI } from '../services/api';
 
 const sidebarItems = [
   { icon: "🏠", label: "Dashboard" },
@@ -445,8 +447,16 @@ export default function Interface({ onSidebarNav, navigate }) {
     setShowAdvanced(false);
   };
 
-  const handleAdd = (formData, stage) => {
-    setLeads([...leads, { ...formData, stage }]);
+  const handleAdd = async (formData, stage) => {
+    try {
+      const name = formData.name || formData.contactName || '';
+      // If amount is empty or not a number, use 0
+      const amount = formData.amount && !isNaN(Number(formData.amount)) ? Number(formData.amount) : 0;
+      const response = await leadsAPI.create({ ...formData, name, amount, stage });
+      setLeads([...leads, response.data]);
+    } catch (error) {
+      alert('Failed to add lead: ' + (error.response?.data?.message || error.message));
+    }
     setOpenFormIndex(null);
     setShowAdvanced(false);
     setShowLeadModal(false);
@@ -476,22 +486,44 @@ export default function Interface({ onSidebarNav, navigate }) {
     setNewPipelineName(e.target.value);
   };
 
-  const handlePipelineNameSubmit = (e) => {
+  // Fetch all pipelines from backend on mount
+  React.useEffect(() => {
+    pipelineAPI.getAll().then(res => {
+      if (res.data && res.data.pipelines && res.data.pipelines.length > 0) {
+        setPipelines(res.data.pipelines.map(p => ({
+          id: p.id, // include id for backend actions
+          name: p.name,
+          stages: p.stages.map(s => s.label),
+        })));
+        setSelectedPipelineIndex(0); // Always select the first pipeline after refresh
+      }
+    });
+  }, []);
+
+  const handlePipelineNameSubmit = async (e) => {
     e.preventDefault();
     setAddPipelineActive(false);
     setNewPipelineName("");
-    setPipelines([
+    const newStages = [
+      "Initial Contact",
+      "Offer Made",
+      "Negotiation"
+    ];
+    const newPipes = [
       ...pipelines,
       {
         name: newPipelineName,
-        stages: [
-          "Initial Contact",
-          "Offer Made",
-          "Negotiation"
-        ],
+        stages: newStages,
       },
-    ]);
-    setSelectedPipelineIndex(pipelines.length); // Select the new pipeline
+    ];
+    setPipelines(newPipes);
+    setSelectedPipelineIndex(newPipes.length - 1); // Select the new pipeline
+    // Save to backend
+    await pipelineAPI.create(newPipelineName, newStages.map(stage => ({
+      key: stage.toLowerCase().replace(/ /g, ''),
+      label: stage,
+      isDefault: false,
+    })));
   };
 
   const handleDotMenuClick = (e) => {
@@ -532,19 +564,48 @@ export default function Interface({ onSidebarNav, navigate }) {
     setContextMenu({ visible: false, x: 0, y: 0, index: null });
   };
   const handleRenameChange = (e) => setRenameValue(e.target.value);
-  const handleRenameSubmit = (e) => {
+  // Rename pipeline and persist to backend
+  const handleRenameSubmit = async (e) => {
     e.preventDefault();
+    const pipelineId = pipelines[renamingIndex]?.id;
     setPipelines(pipelines.map((p, i) => i === renamingIndex ? { ...p, name: renameValue } : p));
     setRenamingIndex(null);
     setRenameValue("");
+    if (pipelineId) {
+      await pipelineAPI.rename(pipelineId, renameValue);
+      // Refetch pipelines to sync state
+      const res = await pipelineAPI.getAll();
+      if (res.data && res.data.pipelines) {
+        setPipelines(res.data.pipelines.map(p => ({
+          id: p.id,
+          name: p.name,
+          stages: p.stages.map(s => s.label),
+        })));
+      }
+    }
   };
-  const handleDeletePipeline = (idx) => {
+
+  // Delete pipeline and persist to backend
+  const handleDeletePipeline = async (idx) => {
     if (pipelines.length === 1) return; // Prevent deleting last pipeline
+    const pipelineId = pipelines[idx]?.id;
     const newPipes = pipelines.filter((_, i) => i !== idx);
     setPipelines(newPipes);
     setContextMenu({ visible: false, x: 0, y: 0, index: null });
     if (selectedPipelineIndex === idx) setSelectedPipelineIndex(0);
     else if (selectedPipelineIndex > idx) setSelectedPipelineIndex(selectedPipelineIndex - 1);
+    if (pipelineId) {
+      await pipelineAPI.delete(pipelineId);
+      // Refetch pipelines to sync state
+      const res = await pipelineAPI.getAll();
+      if (res.data && res.data.pipelines) {
+        setPipelines(res.data.pipelines.map(p => ({
+          id: p.id,
+          name: p.name,
+          stages: p.stages.map(s => s.label),
+        })));
+      }
+    }
   };
 
   const handleSavePipeline = (newPipelines) => {
@@ -980,7 +1041,11 @@ export default function Interface({ onSidebarNav, navigate }) {
                 showAdvanced ? (
                   <AdvancedFieldForm onCancel={handleCancel} />
                 ) : (
-                  <QuickAddForm onCancel={handleCancel} onAdd={(form) => handleAdd(form, stage)} onSettings={handleSettings} />
+                  <QuickAddForm
+                    onCancel={handleCancel}
+                    onAdd={(form) => handleAdd(form, pipelines[selectedPipelineIndex].stages[idx])}
+                    onSettings={handleSettings}
+                  />
                 )
               ) : (
                 <div className="crm-quick-add" onClick={() => handleQuickAddClick(idx)}>

@@ -3,6 +3,7 @@ import './Calendar.css';
 import { FaPhone, FaBriefcase, FaRegClock } from 'react-icons/fa';
 import NewTaskModal from './NewTaskModal';
 import './NewTaskModal.css';
+import { tasksAPI } from '../services/api';
 
 function getWeekDates(date) {
   // Returns array of Date objects for the week (Sun-Sat) containing 'date'
@@ -103,6 +104,30 @@ const Calendar = () => {
     { placeholder: 'Creator' },
   ];
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [tasks, setTasks] = useState([]);
+
+  // Fetch tasks on mount
+  React.useEffect(() => {
+    tasksAPI.getAll().then(res => {
+      console.log('API response for tasks:', res);
+      if (res.data && res.data.tasks) {
+        setTasks(res.data.tasks);
+        console.log('Tasks set in state:', res.data.tasks);
+      }
+    });
+  }, []);
+
+  // Add new task handler
+  const handleAddTask = async (task) => {
+    await tasksAPI.create(task);
+    // Refetch tasks after adding
+    const res = await tasksAPI.getAll();
+    console.log('API response after adding task:', res);
+    if (res.data && res.data.tasks) {
+      setTasks(res.data.tasks);
+      console.log('Tasks set in state after add:', res.data.tasks);
+    }
+  };
 
   return (
     <div className="calendar-root">
@@ -128,7 +153,7 @@ const Calendar = () => {
               </div>
             )}
           </div>
-          <button className="calendar-new-task-btn" onClick={() => setShowNewTaskModal(true)}>+ NEW TASK</button>
+          <button className="calendar-new-task-btn" onClick={() => { setShowNewTaskModal(true); console.log('Button clicked, modal should open'); }}>+ NEW TASK</button>
         </div>
       </div>
       {tab === 'week' ? (
@@ -190,6 +215,13 @@ const Calendar = () => {
             </div>
             <div className="calendar-day-col">
               <div className="calendar-day-header">All day</div>
+              {tasks.filter(
+                t => t.due_date && t.due_date.slice(0,10) === dayDate.toISOString().slice(0,10)
+              ).map(task => (
+                <div key={task.id} className="calendar-task-item">
+                  <b>{task.title}</b><br/>{task.description}
+                </div>
+              ))}
               {timeSlots.map((_, j) => (
                 <div className="calendar-day-cell" key={j}></div>
               ))}
@@ -224,6 +256,13 @@ const Calendar = () => {
                           ? `${day.getDate()} ${day.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`
                           : day.getDate()}
                       </div>
+                      {/* Show tasks for this day */}
+                      {tasks.filter(t => t.due_date && t.due_date.slice(0,10) === day.toISOString().slice(0,10))
+                        .map(task => (
+                          <div key={task.id} className="calendar-task-item" style={{fontSize: '0.9em', marginTop: 2}}>
+                            {task.title}
+                          </div>
+                      ))}
                     </div>
                   );
                 })}
@@ -289,7 +328,7 @@ const Calendar = () => {
           </div>
         </div>
       )}
-      <NewTaskModal open={showNewTaskModal} onClose={() => setShowNewTaskModal(false)} />
+      <NewTaskModal open={showNewTaskModal} onClose={() => setShowNewTaskModal(false)} onAdd={handleAddTask} />
     </div>
   );
 };

@@ -41,112 +41,53 @@ function getMonthMatrix(date) {
   return matrix;
 }
 
-const NewTaskModal = ({ open, onClose }) => {
-  const [selectedQuick, setSelectedQuick] = useState('Tomorrow');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState('12:00AM');
-  const [monthDate, setMonthDate] = useState(new Date());
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const monthMatrix = getMonthMatrix(monthDate);
+export default function NewTaskModal({ open, onClose, onAdd }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState(() => new Date().toISOString().slice(0,10));
 
   if (!open) return null;
 
-  if (!showAdvanced) {
-    // Simple modal with quick options
-    return (
-      <div className="ntm2-overlay">
-        <div className="ntm2-modal" style={{minWidth: 350, minHeight: 120, padding: 32}}>
-          <input className="ntm2-input" placeholder="Contact, lead or customer" style={{marginBottom: 16}} />
-          <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18}}>
-            {quickOptions.map(opt => (
-              <button
-                key={opt}
-                className={`ntm2-quick-opt${selectedQuick === opt ? ' selected' : ''}`}
-                style={{fontSize: '1.08rem', padding: '6px 16px', border: 'none', background: '#f7f8fa', borderRadius: 6, cursor: 'pointer'}}
-                onClick={() => { setSelectedQuick(opt); setShowAdvanced(true); }}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-          <div style={{marginBottom: 18}}>
-            for <a href="#" className="ntm2-user">Abhishek</a>:
-            <span className="ntm2-type"><span className="ntm2-type-icon">🔄</span> <b>Follow-up</b></span>
-          </div>
-          <div className="ntm2-actions">
-            <button className="ntm2-set" onClick={onClose}>Set</button>
-            <button className="ntm2-cancel" onClick={onClose}>Cancel</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onAdd({ title, description, due_date: dueDate });
+    setTitle('');
+    setDescription('');
+    setDueDate(new Date().toISOString().slice(0,10));
+    onClose();
+  };
 
-  // Advanced calendar/time picker UI (existing code)
   return (
-    <div className="ntm2-overlay">
-      <div className="ntm2-modal">
-        <div className="ntm2-top">
-          <input className="ntm2-input" placeholder="Contact or lead" />
-          <span className="ntm2-for">for <a href="#" className="ntm2-user">Abhishek</a>:</span>
-          <span className="ntm2-type"><span className="ntm2-type-icon">🔄</span> <b>Follow-up</b></span>
-        </div>
-        <div className="ntm2-content">
-          <div className="ntm2-quick">
-            {quickOptions.map(opt => (
-              <div
-                key={opt}
-                className={`ntm2-quick-opt${selectedQuick === opt ? ' selected' : ''}`}
-                onClick={() => setSelectedQuick(opt)}
-              >
-                {opt}
-              </div>
-            ))}
+    <div className="calendar-newtask-overlay" onClick={onClose}>
+      <div className="calendar-newtask-modal" onClick={e => e.stopPropagation()}>
+        <div className="calendar-newtask-header">New Task</div>
+        <form onSubmit={handleSubmit}>
+          <input
+            className="calendar-newtask-input"
+            placeholder="Title"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            required
+          />
+          <textarea
+            className="calendar-newtask-textarea"
+            placeholder="Description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+          <input
+            className="calendar-newtask-input"
+            type="date"
+            value={dueDate}
+            onChange={e => setDueDate(e.target.value)}
+          />
+          <div className="calendar-newtask-actions">
+            <button type="submit" className="calendar-newtask-save">Save</button>
+            <button type="button" className="calendar-newtask-cancel" onClick={onClose}>Cancel</button>
           </div>
-          <div className="ntm2-calendar">
-            <div className="ntm2-cal-header">
-              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1))}>{'<'}</button>
-              <span>{monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-              <button onClick={() => setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1))}>{'>'}</button>
-            </div>
-            <div className="ntm2-cal-grid">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                <div className="ntm2-cal-dayhead" key={d}>{d}</div>
-              ))}
-              {monthMatrix.flat().map((day, i) => {
-                const isCurrentMonth = day.getMonth() === monthDate.getMonth();
-                const isSelected = selectedDate.toDateString() === day.toDateString();
-                return (
-                  <div
-                    key={i}
-                    className={`ntm2-cal-cell${isCurrentMonth ? '' : ' out'}${isSelected ? ' selected' : ''}`}
-                    onClick={() => isCurrentMonth && setSelectedDate(day)}
-                  >
-                    {day.getDate()}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="ntm2-times">
-            {timeSlots.map(t => (
-              <div
-                key={t}
-                className={`ntm2-time-opt${selectedTime === t ? ' selected' : ''}`}
-                onClick={() => setSelectedTime(t)}
-              >
-                {t}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="ntm2-actions">
-          <button className="ntm2-set" onClick={onClose}>Set</button>
-          <button className="ntm2-cancel" onClick={onClose}>Cancel</button>
-        </div>
+        </form>
       </div>
     </div>
   );
-};
-
-export default NewTaskModal; 
+} 

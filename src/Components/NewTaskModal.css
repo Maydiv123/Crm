@@ -338,3 +338,109 @@
     border-radius: 10px;
   }
 } 
+
+.calendar-newtask-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-newtask-modal {
+  background: #fff;
+  color: #18344d;
+  border-radius: 16px;
+  padding: 36px 32px 28px 32px;
+  min-width: 420px;
+  max-width: 95vw;
+  min-height: 220px;
+  max-height: 80vh;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+.calendar-newtask-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.calendar-newtask-input {
+  flex: 1;
+  font-size: 1.08rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1.5px solid #e3e8ee;
+  background: #f7f8fa;
+  color: #18344d;
+  transition: border 0.2s;
+  outline: none;
+  margin-bottom: 8px;
+}
+.calendar-newtask-textarea {
+  flex: 1;
+  font-size: 1.08rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1.5px solid #e3e8ee;
+  background: #f7f8fa;
+  color: #18344d;
+  transition: border 0.2s;
+  outline: none;
+  margin-bottom: 8px;
+  min-height: 60px;
+  resize: vertical;
+}
+.calendar-newtask-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  justify-content: flex-start;
+}
+.calendar-newtask-save {
+  background: #f7f8fa;
+  color: #1abc9c;
+  border: 1.5px solid #1abc9c;
+  border-radius: 6px;
+  padding: 8px 22px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.calendar-newtask-save:hover {
+  background: #1abc9c;
+  color: #fff;
+}
+.calendar-newtask-cancel {
+  background: #fff;
+  color: #888;
+  border: 1.5px solid #e3e8ee;
+  border-radius: 6px;
+  padding: 8px 22px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.calendar-newtask-cancel:hover {
+  background: #e3e8ee;
+  color: #18344d;
+} 
+
+.calendar-newtask-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.calendar-newtask-input,
+.calendar-newtask-textarea {
+  width: 100%;
+  box-sizing: border-box;
+} 

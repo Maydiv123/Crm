@@ -60,6 +60,18 @@ CREATE TABLE IF NOT EXISTS lead_tags (
   FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
 );
 
+-- Create tasks table for calendar
+CREATE TABLE IF NOT EXISTS tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  due_date DATE,
+  user_id INT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Insert default admin user (password: admin123)
 INSERT INTO users (name, email, password, role) VALUES 
 ('Admin User', 'admin@crm.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')

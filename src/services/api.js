@@ -58,4 +58,20 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+// Pipeline API
+export const pipelineAPI = {
+  get: () => api.get('/pipeline'),
+  save: (columns) => api.post('/pipeline', { columns }),
+  getAll: () => api.get('/pipeline/all'),
+  create: (name, stages) => api.post('/pipeline/all', { name, stages }),
+  rename: (id, name) => api.put(`/pipeline/${id}`, { name }),
+  delete: (id) => api.delete(`/pipeline/${id}`),
+};
+
+// Tasks API
+export const tasksAPI = {
+  getAll: () => api.get('/tasks'),
+  create: (taskData) => api.post('/tasks', taskData),
+};
+
 export default api; 

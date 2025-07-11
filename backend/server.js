@@ -5,6 +5,8 @@ import pool from './config/db.js';
 import authRoutes from './routes/auth.js';
 import leadRoutes from './routes/leads.js';
 import userRoutes from './routes/users.js';
+import pipelineRoutes from './routes/pipeline.js';
+import tasksRoutes from './routes/tasks.js';
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ pool.getConnection()
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/pipeline', pipelineRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
