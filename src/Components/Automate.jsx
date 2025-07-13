@@ -2,14 +2,15 @@ import React, { useState, useEffect } from "react";
 import { FaCheck, FaTrash } from "react-icons/fa";
 import "./Automate.css";
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const defaultColumns = [
   { key: "initialContact", label: "Initial Contact", hint: null, isDefault: true },
   { key: "discussions", label: "Discussions", hint: "Add hints", isDefault: true },
   { key: "decisionMaking", label: "Decision Making", hint: "Add hints", isDefault: true },
   { key: "contractDiscussion", label: "Contract Discussion", hint: "Add hints", isDefault: true },
-  { key: "closedWon", label: "Closed - won", hint: null, isDefault: true },
-  { key: "closedLost", label: "Closed - lost", hint: null, isDefault: true },
+  { key: "closedWon", label: "Deal - won", hint: null, isDefault: true },
+  { key: "closedLost", label: "Deal - lost", hint: null, isDefault: true },
 ];
 
 function HintsModal({ stage, hints, onChange, onClose, onSave }) {
@@ -49,6 +50,7 @@ export default function Automate({ onBack }) {
   const [editValue, setEditValue] = useState("");
   const [hintsModalIdx, setHintsModalIdx] = useState(null);
   const [hintsDraft, setHintsDraft] = useState({ beginner: "", intermediate: "", expert: "" });
+  const navigate = useNavigate();
 
   // Fetch pipeline config from backend on mount
   useEffect(() => {
@@ -177,7 +179,7 @@ export default function Automate({ onBack }) {
       </aside>
       <main className="automate-main">
         <div className="automate-main-header">
-          <button className="automate-back-btn" onClick={onBack}>Back</button>
+          <button className="automate-back-btn" onClick={() => navigate('/leads')}>Back</button>
           <button className="automate-save-btn" onClick={handleSave}>Save</button>
         </div>
         <div className="automate-kanban-wrapper">

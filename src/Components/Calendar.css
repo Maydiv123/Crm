@@ -652,6 +652,34 @@
   align-items: center;
   height: 36px;
 }
+
+/* 1. Subtle background for grid areas */
+.calendar-week-grid,
+.calendar-day-grid,
+.calendar-month-grid {
+  background: #f7f8fa !important;
+}
+
+/* 2. Task separation */
+.calendar-task-item {
+  background: #fff;
+  border-radius: 6px;
+  border-bottom: 1px solid #e3e8ee;
+  margin-bottom: 4px;
+  padding: 6px 8px 4px 8px;
+  box-shadow: 0 1px 2px #0001;
+  font-size: 1em;
+}
+
+/* 3. Ensure grid lines are visible */
+.calendar-week-cell,
+.calendar-day-cell,
+.calendar-month-cell {
+  border-bottom: 1px solid #e3e8ee;
+  border-right: 1px solid #e3e8ee;
+  background: transparent;
+}
+
 @media (max-width: 900px) {
   .calendar-header {
     flex-direction: column;

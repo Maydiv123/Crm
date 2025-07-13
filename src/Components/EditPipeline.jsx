@@ -93,8 +93,8 @@ const templates = [
       { label: "Invoice sent", color: "green" },
     ],
     closedStages: [
-      { label: "Close-win", color: "green" },
-      { label: "Close-lose", color: "grey" },
+      { label: "Deal - won", color: "green" },
+      { label: "Deal - lost", color: "grey" },
     ],
   },
   {
@@ -243,11 +243,12 @@ export default function EditPipeline({ onClose, pipelines, setPipelines, onSave 
   const handleSave = () => {
     // Convert templateData[selectedTemplate] to pipelines format
     let newStages = templateData[selectedTemplate].activeStages.map(s => s.label);
-    // Always append 'Closed - won' and 'Closed - lost' if not present
+    // Always append 'Deal - won' and 'Deal - lost' if not present
     if (!newStages.includes('Deal - won')) newStages.push('Deal - won');
     if (!newStages.includes('Deal - lost')) newStages.push('Deal - lost');
     const newPipeline = {
-      ...pipelines[0], // keep name, etc.
+      ...pipelines[0],
+      name: templateData[selectedTemplate].name, // set the name to the selected template
       stages: newStages,
     };
     const newPipelines = [newPipeline];

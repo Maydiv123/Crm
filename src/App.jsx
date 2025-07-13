@@ -8,6 +8,7 @@ import Change from './Components/Change';
 import Introduction from './Components/Introduction';
 import Login from './Components/Login';
 import Signup from './Components/Signup';
+import Automate from './Components/Automate';
 import './Components/Change.css';
 import dashboardIcon from './assets/dashboard.png';
 import leadsIcon from './assets/user-engagement.png';
@@ -109,6 +110,11 @@ function AppLayout() {
           <Route path="/leads" element={
             <ProtectedRoute>
               <Interface navigate={navigate} />
+            </ProtectedRoute>
+          } />
+          <Route path="/leads/automate" element={
+            <ProtectedRoute>
+              <Automate />
             </ProtectedRoute>
           } />
           <Route path="/calendar" element={

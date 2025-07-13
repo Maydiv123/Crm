@@ -55,8 +55,8 @@ INSERT INTO pipeline_stages (pipeline_id, stage_key, stage_name, stage_order, is
 (@default_pipeline_id, 'discussions', 'Discussions', 2, TRUE),
 (@default_pipeline_id, 'decisionMaking', 'Decision Making', 3, TRUE),
 (@default_pipeline_id, 'contractDiscussion', 'Contract Discussion', 4, TRUE),
-(@default_pipeline_id, 'closedWon', 'Closed - won', 5, TRUE),
-(@default_pipeline_id, 'closedLost', 'Closed - lost', 6, TRUE)
+(@default_pipeline_id, 'closedWon', 'Deal - won', 5, TRUE),
+(@default_pipeline_id, 'closedLost', 'Deal - lost', 6, TRUE)
 ON DUPLICATE KEY UPDATE stage_name = VALUES(stage_name);
 
 -- Insert default hints for each stage

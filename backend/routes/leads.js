@@ -8,10 +8,22 @@ const router = express.Router();
 // GET /api/leads - Get all leads for the authenticated user
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, limit = 10, stage, status, search } = req.query;
-    const offset = (page - 1) * limit;
-    let where = 'WHERE assigned_to = ?';
-    let params = [req.user.id];
+    const { page = 1, limit = 10, stage, status, search, pipeline } = req.query;
+    const limitNum = parseInt(limit, 10) || 10;
+    const pageNum = parseInt(page, 10) || 1;
+    const offsetNum = (pageNum - 1) * limitNum;
+    let where = '';
+    let params = [];
+    if (req.user.role !== 'admin') {
+      where = 'WHERE assigned_to = ?';
+      params.push(req.user.id);
+    } else {
+      where = 'WHERE 1=1';
+    }
+    if (pipeline) {
+      where += ' AND pipeline = ?';
+      params.push(pipeline);
+    }
     if (stage) {
       where += ' AND stage = ?';
       params.push(stage);
@@ -24,9 +36,10 @@ router.get('/', auth, async (req, res) => {
       where += ' AND (name LIKE ? OR contact_name LIKE ? OR company_name LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
+    console.log('limitNum:', limitNum, 'offsetNum:', offsetNum, 'params:', [...params, limitNum, offsetNum]);
     const [leads] = await pool.execute(
-      `SELECT * FROM leads ${where} ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
-      [...params, Number(limit), Number(offset)]
+      `SELECT * FROM leads ${where} ORDER BY createdAt DESC LIMIT ${limitNum} OFFSET ${offsetNum}`,
+      params
     );
     const [countRows] = await pool.execute(
       `SELECT COUNT(*) as total FROM leads ${where}`,
@@ -35,8 +48,8 @@ router.get('/', auth, async (req, res) => {
     const total = countRows[0].total;
     res.json({
       leads,
-      totalPages: Math.ceil(total / limit),
-      currentPage: Number(page),
+      totalPages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
       total
     });
   } catch (error) {
@@ -154,6 +167,33 @@ router.put('/:id', auth, async (req, res) => {
     res.json(updatedLeads[0]);
   } catch (error) {
     console.error('Update lead error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PATCH /api/leads/:id/stage - Update only the stage of a lead
+router.patch('/:id/stage', auth, async (req, res) => {
+  const { id } = req.params;
+  const { stage } = req.body;
+  try {
+    const [leads] = await pool.execute(
+      `SELECT * FROM leads WHERE id = ?`,
+      [id]
+    );
+    if (leads.length === 0) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+    const lead = leads[0];
+    if (lead.assigned_to !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    await pool.execute(
+      `UPDATE leads SET stage = ? WHERE id = ?`,
+      [stage, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Update lead stage error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Automate from "./Automate";
 import Change from './Change';
 import ActiveLead from "./ActiveLead";
@@ -7,6 +7,8 @@ import "./Interface.css";
 import EditPipeline from "./EditPipeline";
 import { leadsAPI } from '../services/api';
 import { pipelineAPI } from '../services/api';
+import { tasksAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
   { icon: "🏠", label: "Dashboard" },
@@ -127,7 +129,7 @@ function LeadModal({ onClose, onAdd, pipelines, selectedPipelineIndex, initialSt
   const [newFieldType, setNewFieldType] = useState("text");
   const [activeTab, setActiveTab] = useState("Details");
   // Pipeline and stage selection
-  const [selectedPipelineIdx, setSelectedPipelineIdx] = useState(selectedPipelineIndex || 0);
+  const selectedPipelineIdx = selectedPipelineIndex || 0;
   const [selectedStage, setSelectedStage] = useState(initialStage || pipelines[selectedPipelineIdx].stages[0]);
 
   // Kommo-style stage colors
@@ -185,6 +187,7 @@ function LeadModal({ onClose, onAdd, pipelines, selectedPipelineIndex, initialSt
             >{tab}</div>
           ))}
         </div>
+    
         {/* Tab Content */}
         <div className="crm-leadmodal-content">
           {activeTab === 'Details' && (
@@ -314,7 +317,6 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [addPipelineActive, setAddPipelineActive] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState("");
   const [showDotMenu, setShowDotMenu] = useState(false);
-  const [showAutomate, setShowAutomate] = useState(false);
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showLeadDetail, setShowLeadDetail] = useState(false);
   const [leadStage, setLeadStage] = useState('Initial contact');
@@ -326,18 +328,19 @@ export default function Interface({ onSidebarNav, navigate }) {
   // Replace pipelineStages and related logic with pipelines array and selectedPipelineIndex
   const [pipelines, setPipelines] = useState([
     {
-      name: "Pipeline",
+      name: "Sales Pipeline",
       stages: [
         "Initial Contact",
+        "Contacted",
         "Discussions",
         "Decision Making",
         "Contract Discussion",
-        "Deal - won",
-        "Deal - lost",
+        "Closed - won",
+        "Closed - lost",
       ],
     },
   ]);
-  const [selectedPipelineIndex, setSelectedPipelineIndex] = useState(0);
+  const [selectedPipelineIndex, setSelectedPipelineIndex] = useState(null);
   // Add state for context menu and renaming
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, index: null });
   const [renamingIndex, setRenamingIndex] = useState(null);
@@ -379,6 +382,9 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [showTagsModal, setShowTagsModal] = useState(false);
   const [tags, setTags] = useState(["ayush123"]);
   const [tagInput, setTagInput] = useState("");
+  // Add this state:
+  const [selectedLeadIds, setSelectedLeadIds] = useState([]);
+  const [leadModalPipelineIndex, setLeadModalPipelineIndex] = useState(0);
 
   const quickOptions = [
     { label: 'Today', get: () => { const d = new Date(); d.setHours(0,0,0,0); return d; }, key: 'today' },
@@ -452,7 +458,13 @@ export default function Interface({ onSidebarNav, navigate }) {
       const name = formData.name || formData.contactName || '';
       // If amount is empty or not a number, use 0
       const amount = formData.amount && !isNaN(Number(formData.amount)) ? Number(formData.amount) : 0;
-      const response = await leadsAPI.create({ ...formData, name, amount, stage });
+      const response = await leadsAPI.create({ 
+        ...formData, 
+        name, 
+        amount, 
+        stage, 
+        pipeline: pipelines[leadModalPipelineIndex].name // Use the modal's pipeline index
+      });
       setLeads([...leads, response.data]);
     } catch (error) {
       alert('Failed to add lead: ' + (error.response?.data?.message || error.message));
@@ -613,9 +625,6 @@ export default function Interface({ onSidebarNav, navigate }) {
     setShowEditPipeline(false);
   };
 
-  if (showAutomate) {
-    return <Automate onBack={() => setShowAutomate(false)} />;
-  }
   // In Interface component, update leads state when stage changes:
   const handleLeadStageChange = (newStage) => {
     if (!selectedLead) return;
@@ -624,7 +633,84 @@ export default function Interface({ onSidebarNav, navigate }) {
     ));
     setSelectedLead(lead => ({ ...lead, stage: newStage }));
   };
+
+  const handleLeadUpdate = (updatedLead) => {
+    setLeads(leads => leads.map(lead => lead.id === updatedLead.id ? updatedLead : lead));
+  };
+
+  const handleAddTodo = async () => {
+    console.log('handleAddTodo called');
+    try {
+      await tasksAPI.create({
+        title: todoText,
+        description: '', // Add description if needed
+        due_date: todoDate.toLocaleDateString('en-CA'), // YYYY-MM-DD, matches Calendar filter
+        type: todoType
+      });
+      setShowAddTodoModal(false);
+      setTodoText('');
+      setTodoType('Follow up');
+      setTodoDate(() => {
+        const d = new Date();
+        d.setHours(0,0,0,0);
+        return d;
+      });
+    } catch (err) {
+      console.error('Error in handleAddTodo:', err);
+    }
+  };
+
+  const handleChangeStageSave = async () => {
+    if (!selectedLead) return;
+    try {
+      await leadsAPI.updateStage(selectedLead.id, changeStageValue);
+      setLeads(leads => leads.map(lead =>
+        lead.id === selectedLead.id ? { ...lead, stage: changeStageValue } : lead
+      ));
+      setShowChangeStageModal(false);
+    } catch (err) {
+      alert('Failed to update stage: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleDeleteLeads = async () => {
+    for (const id of selectedLeadIds) {
+      await leadsAPI.delete(id);
+    }
+    setLeads(leads => leads.filter(lead => !selectedLeadIds.includes(lead.id)));
+    setSelectedLeadIds([]);
+    setShowDeleteModal(false);
+  };
   // Instead of replacing the main view with Change, render it as a panel/modal:
+  useEffect(() => {
+    leadsAPI.getAll().then(res => {
+      if (res.data && res.data.leads) {
+        setLeads(res.data.leads);
+      }
+    }).catch(err => {
+      console.error('Error fetching leads:', err);
+    });
+  }, []);
+
+  // When user selects a pipeline:
+  const handlePipelineSelect = (idx) => {
+    setSelectedPipelineIndex(idx);
+    localStorage.setItem('selectedPipelineName', pipelines[idx].name);
+  };
+
+  // On mount, restore selected pipeline from localStorage if available
+  useEffect(() => {
+    const savedName = localStorage.getItem('selectedPipelineName');
+    if (savedName && pipelines.length > 0) {
+      const idx = pipelines.findIndex(p => p.name === savedName);
+      if (idx !== -1) setSelectedPipelineIndex(idx);
+      else setSelectedPipelineIndex(0);
+    } else if (pipelines.length > 0 && selectedPipelineIndex === null) {
+      setSelectedPipelineIndex(0); // fallback to first pipeline
+    }
+  }, [pipelines]);
+
+  if (selectedPipelineIndex === null || !pipelines[selectedPipelineIndex]) return null;
   return (
     <div className="crm-main-wrapper">
       {showEditPipeline && (
@@ -645,7 +731,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                 <div
                   key={pipeline.name + idx}
                   className={`crm-leads-sidebar-link${selectedPipelineIndex === idx ? ' crm-leads-sidebar-link-active' : ''}`}
-                  onClick={() => setSelectedPipelineIndex(idx)}
+                  onClick={() => handlePipelineSelect(idx)}
                   onContextMenu={e => handlePipelineRightClick(e, idx)}
                   style={{marginBottom: 4, position: 'relative'}}
                 >
@@ -714,7 +800,7 @@ export default function Interface({ onSidebarNav, navigate }) {
           onClose={() => setShowLeadModal(false)}
           onAdd={handleAdd}
           pipelines={pipelines}
-          selectedPipelineIndex={selectedPipelineIndex}
+          selectedPipelineIndex={leadModalPipelineIndex}
           initialStage={leadModalInitialStage}
         />
       )}
@@ -823,7 +909,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   style={{marginBottom:14,fontSize:'1rem'}}
                 />
                 <div className="crm-modal-actions">
-                  <button className="crm-modal-save">Save</button>
+                  <button type="button" className="crm-modal-save" onClick={handleAddTodo}>Save</button>
                   <button className="crm-modal-cancel" onClick={() => { setShowAddTodoModal(false); setShowTodoAdvanced(false); }}>Cancel</button>
                 </div>
               </>
@@ -857,7 +943,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   style={{marginBottom:14,fontSize:'1rem'}}
                 />
                 <div className="crm-modal-actions">
-                  <button className="crm-modal-save">Save</button>
+                  <button type="button" className="crm-modal-save" onClick={handleAddTodo}>Save</button>
                   <button className="crm-modal-cancel" onClick={() => { setShowAddTodoModal(false); setShowTodoAdvanced(false); }}>Cancel</button>
                 </div>
               </>
@@ -922,7 +1008,7 @@ export default function Interface({ onSidebarNav, navigate }) {
               </div>
             </div>
             <div className="crm-modal-actions">
-              <button className="crm-modal-save">Save</button>
+              <button className="crm-modal-save" onClick={handleChangeStageSave}>Save</button>
               <button className="crm-modal-cancel" onClick={() => setShowChangeStageModal(false)}>Cancel</button>
             </div>
           </div>
@@ -942,7 +1028,7 @@ export default function Interface({ onSidebarNav, navigate }) {
               </span>
             </div>
             <div className="crm-modal-actions">
-              <button className="crm-modal-save" style={{background:'#e74c3c'}} onClick={() => setShowDeleteModal(false)}>Delete</button>
+              <button className="crm-modal-save" style={{background:'#e74c3c'}} onClick={handleDeleteLeads}>Delete</button>
               <button className="crm-modal-cancel" onClick={() => setShowDeleteModal(false)}>Cancel</button>
             </div>
           </div>
@@ -1008,8 +1094,11 @@ export default function Interface({ onSidebarNav, navigate }) {
                 </div>
               )}
             </div>
-            <button className="crm-automate-btn" onClick={() => setShowAutomate(true)}>⚡ AUTOMATE</button>
-            <button className="crm-newlead-btn" onClick={() => setShowLeadModal(true)}>+ NEW LEAD</button>
+            <button className="crm-automate-btn" onClick={() => navigate('/leads/automate')}>⚡ AUTOMATE</button>
+            <button className="crm-newlead-btn" onClick={() => {
+              setLeadModalPipelineIndex(selectedPipelineIndex);
+              setShowLeadModal(true);
+            }}>+ NEW LEAD</button>
           </div>
         </header>
         {showListSettings ? (
@@ -1035,7 +1124,11 @@ export default function Interface({ onSidebarNav, navigate }) {
             <div className="crm-pipeline-stage" key={stage}>
               <div className="crm-pipeline-stage-title">{stage.toUpperCase()}</div>
               <div className="crm-pipeline-stage-info">{
-                leads.filter(lead => lead.stage === stage).length
+                leads.filter(lead => {
+                  const leadStage = lead.stage || '';
+                  const pipelineStage = stage || '';
+                  return leadStage.toLowerCase() === pipelineStage.toLowerCase();
+                }).length
               } lead(s): ₹0</div>
               {openFormIndex === idx ? (
                 showAdvanced ? (
@@ -1053,7 +1146,13 @@ export default function Interface({ onSidebarNav, navigate }) {
                 </div>
               )}
               {/* Render leads for this stage */}
-              {leads.filter(lead => lead.stage === stage).map((lead, i) => (
+              {leads.filter(lead => {
+                const leadStage = (lead.stage || '').toLowerCase();
+                const pipelineStage = (stage || '').toLowerCase();
+                const leadPipeline = (lead.pipeline || '').toLowerCase();
+                const currentPipeline = (pipelines[selectedPipelineIndex].name || '').toLowerCase();
+                return leadStage === pipelineStage && leadPipeline === currentPipeline;
+              }).map((lead, i) => (
                 <div
                   className="crm-lead-card crm-lead-card-modern"
                   key={i}
@@ -1068,12 +1167,20 @@ export default function Interface({ onSidebarNav, navigate }) {
                       type="checkbox"
                       className="crm-lead-select-checkbox"
                       style={{position: 'absolute', top: 12, left: 12, zIndex: 2}}
+                      checked={selectedLeadIds.includes(lead.id)}
+                      onChange={e => {
+                        setSelectedLeadIds(ids =>
+                          e.target.checked
+                            ? [...ids, lead.id]
+                            : ids.filter(id => id !== lead.id)
+                        );
+                      }}
                     />
                   )}
                   <div className="crm-lead-card-header">
                     <div className="crm-lead-card-avatar">{lead.contactName ? lead.contactName[0].toUpperCase() : 'L'}</div>
                     <div className="crm-lead-card-maininfo">
-                      <div className="crm-lead-card-title">{lead.contactName || 'No Name'}</div>
+                      <div className="crm-lead-card-title">{lead.contactName || lead.name || lead.company || 'No Name'}</div>
                       <div className="crm-lead-card-company">{lead.companyName || 'No Company'}</div>
                     </div>
                     <div className="crm-lead-card-status crm-lead-card-status-new">New</div>
@@ -1153,7 +1260,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   </div>
                 </div>
               )} */}
-              {/* {stage === 'Closed - won' && leadStage === 'Closed - won' && (
+              {/* {stage === 'deal - won' && leadStage === 'deal - won' && (
                 <div className="crm-lead-card" onClick={() => setShowLeadDetail(true)} style={{cursor:'pointer'}}>
                   <div className="crm-lead-card-title">Lead #3752044</div>
                   <div className="crm-lead-card-footer">
@@ -1162,7 +1269,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   </div>
                 </div>
               )} */}
-              {/* {stage === 'Closed - lost' && leadStage === 'Closed - lost' && (
+              {/* {stage === 'deal - lost' && leadStage === 'deal - lost' && (
                 <div className="crm-lead-card" onClick={() => setShowLeadDetail(true)} style={{cursor:'pointer'}}>
                   <div className="crm-lead-card-title">Lead #3752044</div>
                   <div className="crm-lead-card-footer">
@@ -1183,6 +1290,7 @@ export default function Interface({ onSidebarNav, navigate }) {
             stage={selectedLead.stage}
             setStage={handleLeadStageChange}
             timeline={timeline}
+            onLeadUpdate={handleLeadUpdate}
           />
         </div>
       )}

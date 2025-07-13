@@ -48,6 +48,7 @@ export const leadsAPI = {
   delete: (id) => api.delete(`/leads/${id}`),
   addNote: (id, noteData) => api.post(`/leads/${id}/notes`, noteData),
   getStats: () => api.get('/leads/stats/overview'),
+  updateStage: (id, stage) => api.patch(`/leads/${id}/stage`, { stage }),
 };
 
 // Users API

@@ -325,7 +325,7 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-        <button className="dashboard-add-btn" onClick={handleAdd}><FaPlus /></button>
+       
         {(editIndex !== null || isAdding) && (
           <div className="dashboard-edit-modal">
             <div className="dashboard-edit-modal-content">
