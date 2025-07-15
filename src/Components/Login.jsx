@@ -4,6 +4,11 @@ import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import loginLottie from "../assets/Login.json";
 import { useAuth } from "../context/AuthContext";
+import idIcon from "../assets/id.svg";
+import mailIcon from "../assets/mail.svg";
+import lockIcon from "../assets/lock.svg";
+import eyeIcon from "../assets/eye.svg";
+import eyeOffIcon from "../assets/eye-off.svg";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,6 +17,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -45,7 +51,7 @@ const Login = () => {
           <h2 className="login-title">Sign In to C.R.M</h2>
           {error && <div className="login-error">{error}</div>}
           <div className="login-input-group">
-            <span className="login-input-icon">🆔</span>
+            <img src={idIcon} alt="ID" className="login-input-svg" />
             <input
               type="text"
               placeholder="ID"
@@ -57,7 +63,7 @@ const Login = () => {
             />
           </div>
           <div className="login-input-group">
-            <span className="login-input-icon">📧</span>
+            <img src={mailIcon} alt="Email" className="login-input-svg" />
             <input
               type="email"
               placeholder="Email"
@@ -68,16 +74,25 @@ const Login = () => {
               disabled={loading}
             />
           </div>
-          <div className="login-input-group">
-            <span className="login-input-icon">🔒</span>
+          <div className="login-input-group" style={{position: 'relative'}}>
+            <img src={lockIcon} alt="Password" className="login-input-svg" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="login-input"
               required
               disabled={loading}
+              style={{paddingRight: '2.5rem'}}
+            />
+            <img
+              src={showPassword ? eyeOffIcon : eyeIcon}
+              alt={showPassword ? "Hide password" : "Show password"}
+              className="login-eye-icon"
+              onClick={() => setShowPassword((prev) => !prev)}
+              style={{position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', width: '22px', height: '22px', opacity: 0.7}}
+              tabIndex={0}
             />
           </div>
           <div className="login-options-row">

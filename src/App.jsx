@@ -9,7 +9,11 @@ import Introduction from './Components/Introduction';
 import Login from './Components/Login';
 import Signup from './Components/Signup';
 import Automate from './Components/Automate';
+import Stat from './Components/Stat';
+import ActivityLog from './Components/ActivityLog';
+import Lists from './Components/Lists';
 import './Components/Change.css';
+import './Components/Interface.css';
 import dashboardIcon from './assets/dashboard.png';
 import leadsIcon from './assets/user-engagement.png';
 import chatsIcon from './assets/bubble-chat.png';
@@ -31,6 +35,7 @@ const sidebarItems = [
   { icon: mailIcon, label: "Mail", path: "/mail" },
   { icon: statsIcon, label: "Stats", path: "/stats" },
   { icon: settingsIcon, label: "Settings", path: "/settings" },
+
 ];
 
 // Protected Route Component
@@ -54,6 +59,10 @@ function AppLayout() {
     logout();
     navigate("/login");
   };
+
+  const handleWhatsAppClick = () => {
+    window.open('http://localhost:3000/', '_blank');
+  };
   
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -62,17 +71,31 @@ function AppLayout() {
           <div className="crm-logo">A</div>
           <nav>
             {sidebarItems.map((item) => (
-              <Link
-                to={item.path}
-                key={item.label}
-                className={`crm-sidebar-item${currentPath.startsWith(item.path) ? ' active' : ''}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <span className="crm-sidebar-icon">
-                  <img src={item.icon} alt={item.label} style={{ width: 28, height: 28, objectFit: 'contain' }} />
-                </span>
-                <span className="crm-sidebar-label">{item.label}</span>
-              </Link>
+              item.label === "WhatsApp" ? (
+                <div
+                  key={item.label}
+                  className={`crm-sidebar-item${currentPath.startsWith(item.path) ? ' active' : ''}`}
+                  style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+                  onClick={handleWhatsAppClick}
+                >
+                  <span className="crm-sidebar-icon">
+                    {item.icon && <img src={item.icon} alt={item.label} style={{ width: 28, height: 28, objectFit: 'contain' }} />}
+                  </span>
+                  <span className="crm-sidebar-label">{item.label}</span>
+                </div>
+              ) : (
+                <Link
+                  to={item.path}
+                  key={item.label}
+                  className={`crm-sidebar-item${currentPath.startsWith(item.path) ? ' active' : ''}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <span className="crm-sidebar-icon">
+                    {item.icon && <img src={item.icon} alt={item.label} style={{ width: 28, height: 28, objectFit: 'contain' }} />}
+                  </span>
+                  <span className="crm-sidebar-label">{item.label}</span>
+                </Link>
+              )
             ))}
           </nav>
           <div style={{ marginTop: 'auto', padding: '20px' }}>
@@ -125,6 +148,21 @@ function AppLayout() {
           <Route path="/leads/:leadId" element={
             <ProtectedRoute>
               <Change />
+            </ProtectedRoute>
+          } />
+          <Route path="/stats" element={
+            <ProtectedRoute>
+              <Stat />
+            </ProtectedRoute>
+          } />
+          <Route path="/activity-log" element={
+            <ProtectedRoute>
+              <ActivityLog />
+            </ProtectedRoute>
+          } />
+          <Route path="/lists" element={
+            <ProtectedRoute>
+              <Lists />
             </ProtectedRoute>
           } />
         </Routes>

@@ -3,6 +3,8 @@ import { FaCog, FaEdit, FaPlus } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaTrash } from "react-icons/fa";
 import "./Dashboard.css";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import axios from 'axios';
 
 const widgetStyles = [
   { id: 1, color: '#222', bg: '#fff' },
@@ -53,6 +55,15 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', user: '', desc: '' });
   const [editEventIdx, setEditEventIdx] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    stageStats: [],
+    statusStats: [],
+    totalLeads: 0,
+    totalAmount: 0,
+    wonLeads: 0,
+    lostLeads: 0,
+    activeLeads: 0,
+  });
 
   const users = ['Abhishek', 'Akash', 'Priya', 'Admin'];
 
@@ -122,6 +133,47 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isMenuOpen]);
+
+  React.useEffect(() => {
+    async function fetchStats() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('/api/leads/stats/overview', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        console.log('DASHBOARD API RESPONSE:', res.data); // Debug line added
+        // Use statusStats for accurate counts
+        let won = 0, lost = 0, active = 0;
+        if (res.data.statusStats) {
+          res.data.statusStats.forEach(s => {
+            if (s.status === 'won') won += Number(s.count);
+            else if (s.status === 'lost') lost += Number(s.count);
+            else if (s.status === 'active') active += Number(s.count);
+          });
+        }
+        setDashboardStats({
+          ...res.data,
+          wonLeads: won,
+          lostLeads: lost,
+          activeLeads: active,
+        });
+      } catch (err) {
+        // fallback: show zeroes
+        setDashboardStats({
+          stageStats: [],
+          statusStats: [],
+          totalLeads: 0,
+          totalAmount: 0,
+          wonLeads: 0,
+          lostLeads: 0,
+          activeLeads: 0,
+        });
+      }
+    }
+    fetchStats();
+  }, []);
 
   const handleEdit = (idx) => {
     setEditIndex(idx);
@@ -295,35 +347,51 @@ export default function Dashboard() {
           <button className="dashboard-setup-btn-unique" onClick={() => setShowSetup(true)}><FaCog className="dashboard-setup-btn-icon" /> Setup</button>
         </div>
         <div className="dashboard-grid">
-          {cards.map((card, idx) => (
-            <div className={`dashboard-card${card.type === 'messages' ? ' dashboard-card-messages' : ''}${card.type === 'leadsources' ? ' dashboard-card-leadsources' : ''}`} key={idx}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="dashboard-card-title">{card.title}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="dashboard-card-edit-btn" onClick={() => handleEdit(idx)}><FaEdit /></button>
-                  <button className="dashboard-card-delete-btn" onClick={() => handleDelete(idx)}><FaTrash /></button>
-                </div>
-              </div>
-              {card.image && <img src={card.image} alt="custom" style={{ width: '100%', borderRadius: 8, margin: '8px 0' }} />}
-              {card.type === 'messages' ? (
-                <>
-                  <div className="dashboard-card-value">0 <span>this month</span></div>
-                  <div className="dashboard-card-list">
-                    <div><span className="dashboard-dot green" /> WhatsApp Cloud API <span className="dashboard-card-list-value">0</span></div>
-                    <div><span className="dashboard-dot blue" /> Live chat <span className="dashboard-card-list-value">0</span></div>
-                    <div><span className="dashboard-dot gray" /> Other <span className="dashboard-card-list-value">0</span></div>
+          {cards.map((card, idx) => {
+            let value = card.value || 0;
+            if (card.type === 'won') value = dashboardStats.wonLeads;
+            if (card.type === 'lost') value = dashboardStats.lostLeads;
+            if (card.type === 'active') value = dashboardStats.activeLeads;
+            return (
+              <div className={`dashboard-card${card.type === 'messages' ? ' dashboard-card-messages' : ''}${card.type === 'leadsources' ? ' dashboard-card-leadsources' : ''}`} key={idx}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="dashboard-card-title">{card.title}</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="dashboard-card-edit-btn" onClick={() => handleEdit(idx)}><FaEdit /></button>
+                    <button className="dashboard-card-delete-btn" onClick={() => handleDelete(idx)}><FaTrash /></button>
                   </div>
-                </>
-              ) : card.type === 'leadsources' ? (
-                <>
-                  <div className="dashboard-card-warning">⚠️ Not enough data to display</div>
-                </>
-              ) : (
-                <div className="dashboard-card-value">{card.value || 0}</div>
-              )}
-              {card.note && <div className="dashboard-card-note">{card.note}</div>}
-            </div>
-          ))}
+                </div>
+                {card.image && <img src={card.image} alt="custom" style={{ width: '100%', borderRadius: 8, margin: '8px 0' }} />}
+                {card.type === 'messages' ? (
+                  <>
+                    <div className="dashboard-card-value">0 <span>this month</span></div>
+                    <div className="dashboard-card-list">
+                      <div><span className="dashboard-dot green" /> WhatsApp Cloud API <span className="dashboard-card-list-value">0</span></div>
+                      <div><span className="dashboard-dot blue" /> Live chat <span className="dashboard-card-list-value">0</span></div>
+                      <div><span className="dashboard-dot gray" /> Other <span className="dashboard-card-list-value">0</span></div>
+                    </div>
+                  </>
+                ) : card.type === 'leadsources' ? (
+                  dashboardStats.stageStats && dashboardStats.stageStats.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={120}>
+                      <BarChart data={dashboardStats.stageStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#1abc9c" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="dashboard-card-warning">⚠️ Not enough data to display</div>
+                  )
+                ) : (
+                  <div className="dashboard-card-value">{value}</div>
+                )}
+                {card.note && <div className="dashboard-card-note">{card.note}</div>}
+              </div>
+            );
+          })}
         </div>
        
         {(editIndex !== null || isAdding) && (

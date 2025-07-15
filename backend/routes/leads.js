@@ -262,20 +262,33 @@ router.post('/:id/notes', auth, [
 // GET /api/leads/stats/overview - Get lead statistics
 router.get('/stats/overview', auth, async (req, res) => {
   try {
+    let where = '';
+    let params = [];
+    if (req.user.role !== 'admin') {
+      where = 'WHERE assigned_to = ?';
+      params.push(req.user.id);
+    } else {
+      where = 'WHERE 1=1';
+    }
     const [stats] = await pool.execute(
-      `SELECT stage, COUNT(*) as count, SUM(amount) as totalAmount FROM leads WHERE assigned_to = ? GROUP BY stage`,
-      [req.user.id]
+      `SELECT stage, COUNT(*) as count, SUM(amount) as totalAmount FROM leads ${where} GROUP BY stage`,
+      params
+    );
+    const [statusStats] = await pool.execute(
+      `SELECT status, COUNT(*) as count FROM leads ${where} GROUP BY status`,
+      params
     );
     const [totalLeadsRow] = await pool.execute(
-      `SELECT COUNT(*) as totalLeads FROM leads WHERE assigned_to = ?`,
-      [req.user.id]
+      `SELECT COUNT(*) as totalLeads FROM leads ${where}`,
+      params
     );
     const [totalAmountRow] = await pool.execute(
-      `SELECT SUM(amount) as totalAmount FROM leads WHERE assigned_to = ?`,
-      [req.user.id]
+      `SELECT SUM(amount) as totalAmount FROM leads ${where}`,
+      params
     );
     res.json({
       stageStats: stats,
+      statusStats,
       totalLeads: totalLeadsRow[0].totalLeads,
       totalAmount: totalAmountRow[0].totalAmount || 0
     });

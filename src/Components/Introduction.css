@@ -1,9 +1,16 @@
+html, body, #root {
+  height: 100%;
+  overflow-y: auto !important;
+}
+
 .intro-container {
   min-height: 100vh;
+  height: 100vh;
   background: #fff;
   display: flex;
   flex-direction: column;
   font-family: 'Poppins', Arial, sans-serif;
+  overflow-y: auto;
 }
 
 .intro-header {
@@ -41,11 +48,10 @@
 }
 
 .intro-main {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
   padding: 2rem;
 }

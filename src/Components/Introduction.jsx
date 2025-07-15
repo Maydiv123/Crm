@@ -15,7 +15,7 @@ const Introduction = () => {
   return (
     <div className="intro-container enhanced-bg">
       <header className="intro-header">
-        <div className="intro-logo">YourCRM</div>
+        <div className="intro-logo">Maydiv</div>
         <div className="intro-auth-options">
           <button className="intro-login prominent" onClick={() => navigate("/login")}>Login</button>
           <button className="intro-signup prominent" onClick={() => navigate("/signup")}>Signup</button>
@@ -90,16 +90,18 @@ const Introduction = () => {
       </main>
       <footer className="intro-footer">
         <div className="footer-content">
-          <div className="footer-brand">YourCRM</div>
+          <div className="footer-brand">Maydiv</div>
           <nav className="footer-links">
             <a href="#" className="footer-link">Home</a>
             <a href="#" className="footer-link">Features</a>
             <a href="#" className="footer-link">Pricing</a>
             <a href="#" className="footer-link">Contact</a>
           </nav>
-          <div className="footer-copy">&copy; {new Date().getFullYear()} YourCRM. All rights reserved.</div>
+          <div className="footer-copy">&copy; {new Date().getFullYear()} Maydiv. All rights reserved.</div>
         </div>
       </footer>
+      {/* Dummy content for scroll testing */}
+      <div style={{height: '120vh', background: 'transparent'}}></div>
     </div>
   );
 };
