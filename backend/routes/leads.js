@@ -5,6 +5,19 @@ import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// GET /api/leads/public - Get all leads without authentication (for WhatsApp bot)
+router.get('/public', async (req, res) => {
+  try {
+    const [leads] = await pool.execute(
+      `SELECT * FROM leads ORDER BY createdAt DESC`
+    );
+    res.json(leads);
+  } catch (error) {
+    console.error('Get public leads error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/leads - Get all leads for the authenticated user
 router.get('/', auth, async (req, res) => {
   try {

@@ -75,4 +75,16 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- Insert default admin user (password: admin123)
 INSERT INTO users (name, email, password, role) VALUES 
 ('Admin User', 'admin@crm.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
+ON DUPLICATE KEY UPDATE id=id;
+
+-- Insert sample leads
+INSERT INTO leads (name, amount, stage, pipeline, contact_name, contact_phone, contact_email, company_name, assigned_to, created_by, status, source, priority) VALUES 
+('John Doe', 50000.00, 'Initial', 'Sales Pipeline', 'John Doe', '+1234567890', 'john@example.com', 'ABC Corp', 1, 1, 'active', 'Website', 'high'),
+('Jane Smith', 75000.00, 'Discussion', 'Sales Pipeline', 'Jane Smith', '+0987654321', 'jane@example.com', 'XYZ Inc', 1, 1, 'active', 'Referral', 'medium'),
+('Mike Johnson', 100000.00, 'Proposal', 'Sales Pipeline', 'Mike Johnson', '+1122334455', 'mike@tech.com', 'Tech Solutions', 1, 1, 'active', 'Cold Call', 'high'),
+('Sarah Wilson', 25000.00, 'Negotiation', 'Sales Pipeline', 'Sarah Wilson', '+1555666777', 'sarah@design.com', 'Design Studio', 1, 1, 'active', 'Social Media', 'medium'),
+('David Brown', 150000.00, 'Closed', 'Sales Pipeline', 'David Brown', '+1888999000', 'david@finance.com', 'Finance Corp', 1, 1, 'won', 'Conference', 'high'),
+('Emily Davis', 30000.00, 'Initial', 'Sales Pipeline', 'Emily Davis', '+1444333222', 'emily@startup.com', 'Startup Inc', 1, 1, 'active', 'Website', 'low'),
+('Robert Wilson', 80000.00, 'Discussion', 'Sales Pipeline', 'Robert Wilson', '+1777888999', 'robert@consulting.com', 'Consulting Group', 1, 1, 'active', 'Referral', 'medium'),
+('Lisa Anderson', 45000.00, 'Proposal', 'Sales Pipeline', 'Lisa Anderson', '+1666555444', 'lisa@retail.com', 'Retail Solutions', 1, 1, 'active', 'Cold Call', 'high')
 ON DUPLICATE KEY UPDATE id=id; 
