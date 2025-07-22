@@ -25,15 +25,27 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const result = await login({ id: userId, email, password });
-    
-    if (result.success) {
-      navigate("/dashboard");
-    } else {
-      setError(result.message);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Save token and user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate("/dashboard");
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (err) {
+      setError("Login failed. Please try again later.");
     }
-    
     setLoading(false);
   };
 

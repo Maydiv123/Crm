@@ -1,0 +1,325 @@
+/* Mail Page Styles */
+.mail-page {
+  padding: 32px 40px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.mail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.mail-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #009688;
+}
+.mail-compose-btn {
+  background: linear-gradient(90deg, #25d366 60%, #009688 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(36, 174, 144, 0.10);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.mail-compose-btn:hover {
+  background: linear-gradient(90deg, #009688 60%, #25d366 100%);
+  box-shadow: 0 4px 16px rgba(36, 174, 144, 0.18);
+}
+.mail-sent-list {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 24px 18px;
+  box-shadow: 0 2px 12px rgba(36, 174, 144, 0.04);
+  margin-top: 24px;
+}
+.mail-sent-list h3 {
+  color: #009688;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.mail-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mail-table th, .mail-table td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+.mail-table th {
+  background: #e0f7fa;
+  color: #009688;
+  font-weight: 700;
+}
+.mail-table tr:last-child td {
+  border-bottom: none;
+}
+.mail-success {
+  background: #e6ffed;
+  color: #25a244;
+  border: 1.5px solid #25d366;
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+.mail-error {
+  background: #fff0f0;
+  color: #d90429;
+  border: 1.5px solid #ff6b35;
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-bottom: 18px;
+  font-weight: 600;
+}
+/* Modal Styles */
+.mail-modal-backdrop {
+  background: rgba(30, 41, 59, 0.45);
+  backdrop-filter: blur(4px);
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.mail-modal {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  max-width: 480px;
+  width: 98vw;
+  padding: 0;
+  overflow: hidden;
+  animation: popin 0.4s cubic-bezier(.4,2,.6,1) 1;
+}
+.mail-modal-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #25d366 0%, #009688 100%);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 18px 28px;
+  color: white;
+  margin-bottom: 0;
+  justify-content: space-between;
+}
+.mail-modal-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+.mail-modal-close {
+  color: white;
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+}
+.mail-form {
+  padding: 28px 28px 18px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mail-form label {
+  font-weight: 500;
+  color: #009688;
+  margin-bottom: 2px;
+}
+.mail-form input,
+.mail-form textarea {
+  background: rgba(255,255,255,0.85);
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  margin-top: 2px;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(36, 174, 144, 0.04);
+  color: #111;
+}
+.mail-form input:focus,
+.mail-form textarea:focus {
+  border: 1.5px solid #25d366;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(36, 174, 144, 0.10);
+}
+.mail-send-btn {
+  background: linear-gradient(90deg, #25d366 60%, #009688 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(36, 174, 144, 0.10);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.mail-send-btn:hover {
+  background: linear-gradient(90deg, #009688 60%, #25d366 100%);
+  box-shadow: 0 4px 16px rgba(36, 174, 144, 0.18);
+}
+.mail-cancel-btn {
+  border: 1.5px solid #25d366;
+  background: #fff;
+  color: #25d366;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+.mail-cancel-btn:hover {
+  background: #e0f7fa;
+  color: #009688;
+}
+.crm-mail-bg {
+  background: linear-gradient(120deg, #f8fafc 60%, #e0f7fa 100%);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+.crm-mail-header {
+  background: linear-gradient(90deg, #25d366 0%, #009688 100%);
+  border-radius: 0 0 18px 18px;
+  padding: 32px 40px 24px 40px;
+  margin: -32px -40px 32px -40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 24px rgba(36, 174, 144, 0.08);
+}
+.crm-mail-header h2 {
+  color: white;
+  font-size: 2.1rem;
+  font-weight: 800;
+  margin: 0;
+}
+.crm-mail-card {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(36, 174, 144, 0.10);
+  padding: 32px 28px;
+  margin: 0 auto;
+  max-width: 700px;
+}
+.crm-mail-dark-bg {
+  background: linear-gradient(120deg, #f8fafc 60%, #e0f7fa 100%);
+  min-height: 100vh;
+  padding: 0;
+}
+.crm-mail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 0;
+  background: #09304a;
+  border-bottom: 1.5px solid #1e4257;
+  height: 70px;
+  gap: 18px;
+}
+.crm-mail-tabs {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 2px;
+}
+.crm-mail-tabs button {
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0 32px;
+  height: 70px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border 0.2s;
+}
+.crm-mail-tabs button.active {
+  color: #25d366;
+  border-bottom: 3px solid #25d366;
+  background: #0a2a3a;
+}
+.crm-mail-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.crm-mail-search {
+  background: #183c4e;
+  border: 1.5px solid #1e4257;
+  border-radius: 8px;
+  color: #e0e0e0;
+  padding: 10px 16px;
+  font-size: 1rem;
+  min-width: 220px;
+  margin-right: 8px;
+}
+.crm-mail-search::placeholder {
+  color: #b0bfc7;
+}
+.crm-mail-settings-btn {
+  background: #183c4e;
+  color: #25d366;
+  border: 1.5px solid #25d366;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.crm-mail-settings-btn:hover {
+  background: #25d366;
+  color: #fff;
+}
+.crm-mail-list-card {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(36, 174, 144, 0.10);
+  padding: 0;
+  margin: 32px auto 0 auto;
+  max-width: 900px;
+  overflow: hidden;
+}
+.crm-mail-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: none;
+}
+.crm-mail-table th, .crm-mail-table td {
+  padding: 18px 16px;
+  text-align: left;
+  border-bottom: 1px solid #1e4257;
+  color: #222;
+  font-size: 1rem;
+}
+.crm-mail-table th {
+  background: #e0f7fa;
+  color: #009688;
+  border-bottom: 2px solid #25d366;
+}
+.crm-mail-table tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 700px) {
+  .mail-page { padding: 12px 2vw; }
+  .mail-modal { max-width: 99vw; }
+  .mail-form { padding: 16px 8px 8px 8px; }
+  .crm-mail-header { padding: 18px 8px 12px 8px; margin: -18px -8px 18px -8px; }
+  .crm-mail-card { padding: 16px 4px; }
+  .crm-mail-toolbar { flex-direction: column; height: auto; padding: 0; }
+  .crm-mail-tabs button { padding: 0 12px; font-size: 1rem; height: 48px; }
+  .crm-mail-list-card { margin: 16px 2vw 0 2vw; }
+  .crm-mail-table th, .crm-mail-table td { padding: 10px 6px; font-size: 0.98rem; }
+}

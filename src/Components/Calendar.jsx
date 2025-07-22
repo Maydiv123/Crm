@@ -108,24 +108,46 @@ const Calendar = () => {
 
   // Fetch tasks on mount
   React.useEffect(() => {
-    tasksAPI.getAll().then(res => {
-      console.log('API response for tasks:', res);
-      if (res.data && res.data.tasks) {
-        setTasks(res.data.tasks);
-        console.log('Tasks set in state:', res.data.tasks);
-      }
-    });
+    const fetchTasks = () => {
+      tasksAPI.getAllTasks().then(res => {
+        if (res.data && res.data.tasks) {
+          setTasks(res.data.tasks);
+          console.log('Fetched tasks:', res.data.tasks.length); // Debug log
+          console.log('Task details:', res.data.tasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            due_date: t.due_date,
+            description: t.description
+          })));
+        }
+      }).catch(err => {
+        console.error('Error fetching tasks:', err);
+      });
+    };
+    fetchTasks();
+    // Listen for custom event to refetch tasks
+    const handler = () => fetchTasks();
+    window.addEventListener('tasks-updated', handler);
+    return () => window.removeEventListener('tasks-updated', handler);
   }, []);
 
   // Add new task handler
   const handleAddTask = async (task) => {
-    await tasksAPI.create(task);
-    // Refetch tasks after adding
-    const res = await tasksAPI.getAll();
-    console.log('API response after adding task:', res);
-    if (res.data && res.data.tasks) {
-      setTasks(res.data.tasks);
-      console.log('Tasks set in state after add:', res.data.tasks);
+    try {
+      const response = await tasksAPI.create(task);
+      console.log('Task created:', response.data);
+      
+      // Add the new task to the current tasks list
+      setTasks(prevTasks => [...prevTasks, response.data]);
+      
+      // Also refetch all tasks to ensure consistency
+      const res = await tasksAPI.getAllTasks();
+      if (res.data && res.data.tasks) {
+        setTasks(res.data.tasks);
+        console.log('Tasks updated after adding:', res.data.tasks.length);
+      }
+    } catch (error) {
+      console.error('Error adding task:', error);
     }
   };
 
@@ -188,8 +210,15 @@ const Calendar = () => {
                 {weekDates.map((d, i) => (
                   <div className="calendar-week-day-col" key={i}>
                     {/* Show tasks for this day at the top */}
-                    {tasks.filter(t => t.due_date && t.due_date.slice(0,10) === d.toISOString().slice(0,10))
-                      .map(task => (
+                    {tasks.filter(t => {
+                      const taskDate = t.due_date && t.due_date.slice(0,10);
+                      const dayDate = d.toISOString().slice(0,10);
+                      const matches = taskDate === dayDate;
+                      if (matches) {
+                        console.log('Task matches date:', t.title, 'on', dayDate);
+                      }
+                      return matches;
+                    }).map(task => (
                         <div key={task.id} className="calendar-task-item" style={{fontSize: '0.95em', margin: '2px 0'}}>
                           <b>{task.title}</b><br/>{task.description}
                         </div>

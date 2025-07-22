@@ -5,6 +5,9 @@ import { FaTrash } from "react-icons/fa";
 import "./Dashboard.css";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import axios from 'axios';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const widgetStyles = [
   { id: 1, color: '#222', bg: '#fff' },
@@ -27,6 +30,25 @@ const bgImages = [
   'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=400&q=80',
   'https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80',
 ];
+
+function SortableCard({ card, idx, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: idx });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : undefined,
+        boxShadow: isDragging ? '0 8px 32px #00968855, 0 2.5px 12px #00968822' : undefined,
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [showSetup, setShowSetup] = useState(false);
@@ -66,6 +88,9 @@ export default function Dashboard() {
   });
 
   const users = ['Abhishek', 'Akash', 'Priya', 'Admin'];
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const role = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : '';
+  const email = user.email || '';
 
   const handleEventFormChange = (e) => {
     const { name, value } = e.target;
@@ -236,6 +261,18 @@ export default function Dashboard() {
     setCards(prev => prev.filter((_, i) => i !== idx));
   };
 
+  // Drag and drop handler for dnd-kit
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setCards((items) => {
+        const oldIndex = items.findIndex((_, i) => i === active.id);
+        const newIndex = items.findIndex((_, i) => i === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   return (
     <div className="dashboard-bg" style={bgImages[bg] ? { backgroundImage: `url(${bgImages[bg]})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
       {showSetup && (
@@ -286,7 +323,8 @@ export default function Dashboard() {
         </div>
       )}
       <header className="dashboard-header">
-        <div className="dashboard-logo">Admin</div>
+        <div className="dashboard-logo">{role}</div>
+        <div className="dashboard-email" style={{marginLeft: 16, fontWeight: 500, color: '#1abc9c'}}>{email}</div>
         <input className="dashboard-search" placeholder="Search" />
         <button className="dashboard-events-btn" onClick={() => setShowEvents(true)}>EVENTS</button>
         <button className="dashboard-menu-btn" onClick={() => setIsMenuOpen((v) => !v)}><BsThreeDotsVertical /></button>
@@ -346,53 +384,59 @@ export default function Dashboard() {
           <select className="dashboard-select-user"><option>Select user</option></select>
           <button className="dashboard-setup-btn-unique" onClick={() => setShowSetup(true)}><FaCog className="dashboard-setup-btn-icon" /> Setup</button>
         </div>
-        <div className="dashboard-grid">
-          {cards.map((card, idx) => {
-            let value = card.value || 0;
-            if (card.type === 'won') value = dashboardStats.wonLeads;
-            if (card.type === 'lost') value = dashboardStats.lostLeads;
-            if (card.type === 'active') value = dashboardStats.activeLeads;
-            return (
-              <div className={`dashboard-card${card.type === 'messages' ? ' dashboard-card-messages' : ''}${card.type === 'leadsources' ? ' dashboard-card-leadsources' : ''}`} key={idx}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="dashboard-card-title">{card.title}</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="dashboard-card-edit-btn" onClick={() => handleEdit(idx)}><FaEdit /></button>
-                    <button className="dashboard-card-delete-btn" onClick={() => handleDelete(idx)}><FaTrash /></button>
-                  </div>
-                </div>
-                {card.image && <img src={card.image} alt="custom" style={{ width: '100%', borderRadius: 8, margin: '8px 0' }} />}
-                {card.type === 'messages' ? (
-                  <>
-                    <div className="dashboard-card-value">0 <span>this month</span></div>
-                    <div className="dashboard-card-list">
-                      <div><span className="dashboard-dot green" /> WhatsApp Cloud API <span className="dashboard-card-list-value">0</span></div>
-                      <div><span className="dashboard-dot blue" /> Live chat <span className="dashboard-card-list-value">0</span></div>
-                      <div><span className="dashboard-dot gray" /> Other <span className="dashboard-card-list-value">0</span></div>
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={cards.map((_, idx) => idx)} strategy={horizontalListSortingStrategy}>
+            <div className="dashboard-grid">
+              {cards.map((card, idx) => {
+                let value = card.value || 0;
+                if (card.type === 'won') value = dashboardStats.wonLeads;
+                if (card.type === 'lost') value = dashboardStats.lostLeads;
+                if (card.type === 'active') value = dashboardStats.activeLeads;
+                return (
+                  <SortableCard key={idx} card={card} idx={idx}>
+                    <div className={`dashboard-card${card.type === 'messages' ? ' dashboard-card-messages' : ''}${card.type === 'leadsources' ? ' dashboard-card-leadsources' : ''}`}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="dashboard-card-title">{card.title}</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="dashboard-card-edit-btn" onClick={() => handleEdit(idx)}><FaEdit /></button>
+                          <button className="dashboard-card-delete-btn" onClick={() => handleDelete(idx)}><FaTrash /></button>
+                        </div>
+                      </div>
+                      {card.image && <img src={card.image} alt="custom" style={{ width: '100%', borderRadius: 8, margin: '8px 0' }} />}
+                      {card.type === 'messages' ? (
+                        <>
+                          <div className="dashboard-card-value">0 <span>this month</span></div>
+                          <div className="dashboard-card-list">
+                            <div><span className="dashboard-dot green" /> WhatsApp Cloud API <span className="dashboard-card-list-value">0</span></div>
+                            <div><span className="dashboard-dot blue" /> Live chat <span className="dashboard-card-list-value">0</span></div>
+                            <div><span className="dashboard-dot gray" /> Other <span className="dashboard-card-list-value">0</span></div>
+                          </div>
+                        </>
+                      ) : card.type === 'leadsources' ? (
+                        dashboardStats.stageStats && dashboardStats.stageStats.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={120}>
+                            <BarChart data={dashboardStats.stageStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
+                              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                              <Tooltip />
+                              <Bar dataKey="count" fill="#1abc9c" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="dashboard-card-warning">⚠️ Not enough data to display</div>
+                        )
+                      ) : (
+                        <div className="dashboard-card-value">{value}</div>
+                      )}
+                      {card.note && <div className="dashboard-card-note">{card.note}</div>}
                     </div>
-                  </>
-                ) : card.type === 'leadsources' ? (
-                  dashboardStats.stageStats && dashboardStats.stageStats.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={120}>
-                      <BarChart data={dashboardStats.stageStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#1abc9c" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="dashboard-card-warning">⚠️ Not enough data to display</div>
-                  )
-                ) : (
-                  <div className="dashboard-card-value">{value}</div>
-                )}
-                {card.note && <div className="dashboard-card-note">{card.note}</div>}
-              </div>
-            );
-          })}
-        </div>
+                  </SortableCard>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
        
         {(editIndex !== null || isAdding) && (
           <div className="dashboard-edit-modal">

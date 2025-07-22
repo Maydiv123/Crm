@@ -4,11 +4,9 @@ import "./Stat.css";
 
 const analyticsItems = [
   { label: "Win-Loss Analysis", path: "/stats" },
-  { label: "Consolidated report", path: "/consolidated-report" },
-  { label: "Report by activities", path: "/report-by-activities" },
+
   { label: "Activity Log", path: "/activity-log" },
-  { label: "Call report", path: "/call-report" },
-  { label: "Goal report", path: "/goal-report" },
+
 ];
 
 export default function AnalyticsSidebar() {

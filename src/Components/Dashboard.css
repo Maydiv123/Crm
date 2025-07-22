@@ -1,99 +1,121 @@
+/* Glassy overlay for background */
+/* (Removed for clear background) */
+
+/* Lighter, iOS-inspired dashboard theme */
+.dashboard-bg::before {
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(18px);
+}
 .dashboard-bg {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0a6fd8 0%, #1cb5e0 100%);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  padding: 0;
+  background: linear-gradient(135deg, #e0f7fa 0%, #f8fafc 100%);
 }
 .dashboard-header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 24px;
-  padding: 24px 32px 0 32px;
+  padding: 32px 48px 0 48px;
+  background: rgba(255,255,255,0.72);
+  border-radius: 0 0 32px 32px;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.06);
+  position: relative;
+  z-index: 2;
 }
 .dashboard-logo {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: bold;
-  color: #fff;
+  color: #1cb5e0;
   margin-right: 32px;
+  letter-spacing: 1px;
 }
 .dashboard-search {
   flex: 1;
-  max-width: 400px;
-  padding: 10px 18px;
-  border-radius: 8px;
+  max-width: 420px;
+  padding: 14px 22px;
+  border-radius: 18px;
   border: none;
-  font-size: 1.1rem;
-  background: #fff;
+  font-size: 1.15rem;
+  background: rgba(255,255,255,0.92);
   margin-right: 32px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
 }
 .dashboard-events-btn {
-  background: #0a6fd8;
+  background: linear-gradient(90deg, #1cb5e0 60%, #0a6fd8 100%);
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 18px;
+  padding: 12px 32px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(44,62,80,0.10);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 .dashboard-events-btn:hover {
-  background: #1cb5e0;
+  background: linear-gradient(90deg, #0a6fd8 60%, #1cb5e0 100%);
+  box-shadow: 0 4px 16px rgba(44,62,80,0.18);
 }
 .dashboard-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 0 0 0;
+  padding: 32px 0 0 0;
+  position: relative;
+  z-index: 1;
 }
 .dashboard-username {
-  color: #fff;
-  font-size: 2.2rem;
-  font-weight: 700;
+  color: #009688;
+  font-size: 2.4rem;
+  font-weight: 800;
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px #b2f7ef44;
 }
 .dashboard-filters {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  background: rgba(255,255,255,0.72);
+  border-radius: 18px;
+  padding: 14px 24px;
+  box-shadow: 0 2px 8px rgba(44,62,80,0.04);
 }
 .dashboard-filters button, .dashboard-filters select {
-  background: #0a6fd8;
-  color: #fff;
+  background: linear-gradient(90deg, #b2f7ef 60%, #e0f7fa 100%);
+  color: #009688;
   border: none;
   border-radius: 18px;
-  padding: 7px 18px;
-  font-size: 1rem;
-  font-weight: 500;
+  padding: 10px 22px;
+  font-size: 1.05rem;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  box-shadow: 0 1px 4px #b2f7ef44;
 }
 .dashboard-filters button.active {
   background: #fff;
-  color: #0a6fd8;
+  color: #009688;
   font-weight: 700;
 }
 .dashboard-select-user {
   background: #fff;
-  color: #0a6fd8;
+  color: #009688;
   border: none;
   border-radius: 18px;
-  padding: 7px 18px;
-  font-size: 1rem;
-  font-weight: 500;
+  padding: 10px 22px;
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 .dashboard-setup-btn {
   background: none;
   color: #fff;
   border: 2px solid #fff;
   border-radius: 18px;
-  padding: 7px 18px;
-  font-size: 1rem;
-  font-weight: 500;
+  padding: 10px 22px;
+  font-size: 1.05rem;
+  font-weight: 600;
   margin-left: 18px;
   transition: background 0.2s, color 0.2s;
 }
@@ -103,60 +125,65 @@
 }
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-top: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 28px;
+  margin-top: 28px;
+  align-items: stretch;
 }
 .dashboard-card {
-  background: #0a2747;
-  color: #fff;
-  border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(44, 62, 80, 0.18), 0 1.5px 6px rgba(44, 62, 80, 0.10);
-  padding: 18px 18px 12px 18px;
-  min-height: 120px;
+  background: rgba(255,255,255,0.82);
+  color: #009688;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px #b2f7ef33, 0 2.5px 12px #b2f7ef22;
+  padding: 28px 24px 18px 24px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
-  font-size: 1.1rem;
+  font-size: 1.13rem;
   font-weight: 500;
   position: relative;
-  border: 2.5px solid transparent;
+  border: 2.5px solid #e0f7fa;
   background-clip: padding-box, border-box;
   background-origin: padding-box, border-box;
-  background-image: linear-gradient(#0a2747, #0a2747), linear-gradient(120deg, #1abc9c 0%, #2980ef 100%);
-  transition: box-shadow 0.2s, border 0.2s, transform 0.2s;
+  background-image: linear-gradient(rgba(255,255,255,0.18), rgba(255,255,255,0.18)), linear-gradient(120deg, #1abc9c 0%, #2980ef 100%);
+  transition: box-shadow 0.2s, border 0.2s, transform 0.2s, background 0.2s;
+  backdrop-filter: blur(12px);
 }
 .dashboard-card:hover {
-  box-shadow: 0 12px 32px rgba(44, 62, 80, 0.28), 0 2.5px 12px rgba(44, 62, 80, 0.18);
-  border: 2.5px solid #1abc9c;
-  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 16px 48px #b2f7ef55, 0 4px 24px #b2f7ef33;
+  border: 2.5px solid #009688;
+  transform: translateY(-4px) scale(1.035);
   z-index: 2;
+  background: rgba(255,255,255,0.95);
 }
 .dashboard-card-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #009688;
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 4px #b2f7ef44;
 }
 .dashboard-card-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: #1cb5e0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: black;
+  text-shadow: 0 1px 4px #b2f7ef44;
 }
 .dashboard-card-value span {
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 400;
-  color: #b2e6fa;
+  color: black;
   margin-left: 8px;
 }
 .dashboard-card-list {
-  margin-top: 10px;
-  font-size: 1rem;
-  color: #b2e6fa;
+  margin-top: 12px;
+  font-size: 1.08rem;
+  color: #009688;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .dashboard-dot {
   display: inline-block;
@@ -165,20 +192,20 @@
   border-radius: 50%;
   margin-right: 6px;
 }
-.dashboard-dot.green { background: #1abc9c; }
-.dashboard-dot.blue { background: #2980ef; }
+.dashboard-dot.green { background: #00b894; }
+.dashboard-dot.blue { background: #00bfff; }
 .dashboard-dot.gray { background: #bdbdbd; }
 .dashboard-card-list-value {
   float: right;
-  color: #fff;
+  color: #009688;
   font-weight: 600;
   margin-left: 8px;
 }
 .dashboard-card-warning {
   color: #f7b731;
-  font-size: 1rem;
+  font-size: 1.08rem;
   margin-top: 18px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .dashboard-card-value.purple { color: #a259f7; }
 .dashboard-card-value.green { color: #1abc9c; }
@@ -364,7 +391,7 @@
 .dashboard-card-edit-btn {
   background: none;
   border: none;
-  color: #1abc9c;
+  color: black;
   font-size: 1.2em;
   cursor: pointer;
   margin-left: 8px;
@@ -657,6 +684,26 @@
 .dashboard-event-form button:hover {
   background: linear-gradient(90deg, #2980ef 60%, #1abc9c 100%);
   box-shadow: 0 4px 16px #2980ef22;
+}
+.dashboard-card input,
+.dashboard-filters input,
+.dashboard-content input {
+  background: #fff !important;
+  color: #222 !important;
+  border: 1.5px solid #b2e6fa !important;
+  border-radius: 8px !important;
+  font-size: 1.08rem;
+  font-weight: 500;
+  box-shadow: 0 1px 4px #b2f7ef22;
+  padding: 10px 14px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+.dashboard-card input::placeholder,
+.dashboard-filters input::placeholder,
+.dashboard-content input::placeholder {
+  color: #888 !important;
+  opacity: 1;
 }
 @media (max-width: 1100px) {
   .dashboard-grid {

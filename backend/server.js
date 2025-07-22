@@ -7,6 +7,9 @@ import leadRoutes from './routes/leads.js';
 import userRoutes from './routes/users.js';
 import pipelineRoutes from './routes/pipeline.js';
 import tasksRoutes from './routes/tasks.js';
+import mailRoutes from './routes/mail.js';
+import activityLogRoutes from './routes/activityLogs.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -35,6 +38,9 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/pipeline', pipelineRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/mail', mailRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -9,6 +9,9 @@ import { leadsAPI } from '../services/api';
 import { pipelineAPI } from '../services/api';
 import { tasksAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import Task from './Task';
+import Notes from './Notes';
+import Files from './Files';
 
 const sidebarItems = [
   { icon: "🏠", label: "Dashboard" },
@@ -16,7 +19,7 @@ const sidebarItems = [
   { icon: "💬", label: "Chats" },
   { icon: "🟢", label: "WhatsApp" },
   { icon: "📅", label: "Calendar" },
-  { icon: "🗂️", label: "Lists" },
+          { icon: "🗂️", label: "Invoice" },
   { icon: "✉️", label: "Mail" },
   { icon: "📊", label: "Stats" },
   { icon: "⚙️", label: "Settings" },
@@ -227,8 +230,8 @@ function LeadModal({ onClose, onAdd, pipelines, selectedPipelineIndex, initialSt
                     onChange={handleChange}
                     placeholder="Enter phone"
                     style={{ borderRadius: '0 4px 4px 0', borderLeft: 'none' }}
-                    maxLength={10}
-                    pattern="\d{10}"
+                    maxLength={12}
+                    pattern="\d{12}"
                     required
                   />
                 </div>
@@ -296,13 +299,13 @@ function LeadModal({ onClose, onAdd, pipelines, selectedPipelineIndex, initialSt
             </div>
           )}
           {activeTab === 'Tasks' && (
-            <div className="crm-leadmodal-placeholder">Tasks tab coming soon...</div>
+            <Task leadId={form.id || form._id || form.leadId || ''} />
           )}
           {activeTab === 'Notes' && (
-            <div className="crm-leadmodal-placeholder">Notes tab coming soon...</div>
+            <Notes leadId={form.id || form._id || form.leadId || ''} />
           )}
           {activeTab === 'Files' && (
-            <div className="crm-leadmodal-placeholder">Files tab coming soon...</div>
+            <Files leadId={form.id || form._id || form.leadId || ''} />
           )}
         </div>
       </div>
@@ -686,6 +689,7 @@ export default function Interface({ onSidebarNav, navigate }) {
     leadsAPI.getAll().then(res => {
       if (res.data && res.data.leads) {
         setLeads(res.data.leads);
+        console.log('Fetched leads:', res.data.leads.length); // Debug log
       }
     }).catch(err => {
       console.error('Error fetching leads:', err);
@@ -1087,7 +1091,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   <div className="crm-dotmenu-item"><FaBroadcastTower className="crm-dotmenu-icon" /> New broadcast</div>
                   <div className="crm-dotmenu-item" onClick={() => setShowEditPipeline(true)}><FaEdit className="crm-dotmenu-icon" /> Edit pipeline</div>
                   <div className="crm-dotmenu-item"><FaPrint className="crm-dotmenu-icon" /> Print</div>
-                  <div className="crm-dotmenu-item" onClick={() => setShowListSettings(true)}><FaCogs className="crm-dotmenu-icon" /> List settings</div>
+                  <div className="crm-dotmenu-item" onClick={() => setShowListSettings(true)}><FaCogs className="crm-dotmenu-icon" /> Invoice settings</div>
                   <div className="crm-dotmenu-item"><FaArrowDown className="crm-dotmenu-icon" /> Import</div>
                   <div className="crm-dotmenu-item"><FaArrowUp className="crm-dotmenu-icon" /> Export</div>
                   <div className="crm-dotmenu-item"><FaClone className="crm-dotmenu-icon" /> Find duplicates</div>

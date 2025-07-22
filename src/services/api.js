@@ -42,12 +42,14 @@ export const authAPI = {
 // Leads API
 export const leadsAPI = {
   getAll: (params) => api.get('/leads', { params }),
+  getAllLeads: (params) => api.get('/leads/all', { params }), // New endpoint for all leads
   getById: (id) => api.get(`/leads/${id}`),
   create: (leadData) => api.post('/leads', leadData),
   update: (id, leadData) => api.put(`/leads/${id}`, leadData),
   delete: (id) => api.delete(`/leads/${id}`),
   addNote: (id, noteData) => api.post(`/leads/${id}/notes`, noteData),
   getStats: () => api.get('/leads/stats/overview'),
+  getWinLossStats: () => api.get('/leads/stats/win-loss'),
   updateStage: (id, stage) => api.patch(`/leads/${id}/stage`, { stage }),
 };
 
@@ -71,8 +73,38 @@ export const pipelineAPI = {
 
 // Tasks API
 export const tasksAPI = {
-  getAll: () => api.get('/tasks'),
+  getAll: (params) => api.get('/tasks', { params }),
+  getAllTasks: (params) => api.get('/tasks/all', { params }), // New endpoint for all tasks
+  getById: (id) => api.get(`/tasks/${id}`),
   create: (taskData) => api.post('/tasks', taskData),
+  update: (id, taskData) => api.put(`/tasks/${id}`, taskData),
+  delete: (id) => api.delete(`/tasks/${id}`),
+};
+
+// Activity Logs API
+export const activityLogsAPI = {
+  getAll: (params) => api.get('/activity-logs', { params }),
+  getById: (id) => api.get(`/activity-logs/${id}`),
+  create: (activityData) => api.post('/activity-logs', activityData),
+  delete: (id) => api.delete(`/activity-logs/${id}`),
+};
+
+// Admin API
+export const adminAPI = {
+  getStats: () => api.get('/admin/stats'),
+  getAdvertisements: () => api.get('/admin/advertisements'),
+  createAdvertisement: (data) => api.post('/admin/advertisements', data),
+  updateAdvertisement: (id, data) => api.put(`/admin/advertisements/${id}`, data),
+  deleteAdvertisement: (id) => api.delete(`/admin/advertisements/${id}`),
+  getPackages: () => api.get('/admin/packages'),
+  createPackage: (data) => api.post('/admin/packages', data),
+  updatePackage: (id, data) => api.put(`/admin/packages/${id}`, data),
+  getUsers: () => api.get('/admin/users'),
+  getUserDetails: (id) => api.get(`/admin/users/${id}`),
+  getPermissions: () => api.get('/admin/permissions'),
+  updateUserPermissions: (id, permissions) => api.put(`/admin/users/${id}/permissions`, { permissions }),
+  getActivityLogs: () => api.get('/admin/activity-logs'),
+  getMonthlyAnalytics: () => api.get('/admin/analytics/monthly'),
 };
 
 export default api; 

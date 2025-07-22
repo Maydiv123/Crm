@@ -65,6 +65,7 @@ html, body, #root {
 .crm-sidebar-label {
   font-size: 0.7rem;
   margin-top: 4px;
+
 }
 
 .crm-main-wrapper {
@@ -152,6 +153,7 @@ html, body, #root {
   font-size: 1rem;
   width: 220px;
   background: #fafbfc;
+  color: black;
 }
 
 .crm-topbar-center {

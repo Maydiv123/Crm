@@ -27,7 +27,12 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    let { name, email, password, role } = req.body;
+    // Accept only allowed roles
+    const allowedRoles = ['admin', 'user', 'manager', 'employee'];
+    if (!role || !allowedRoles.includes(role)) {
+      role = 'user';
+    }
 
     // Check if user already exists
     const [existingUsers] = await pool.execute(
@@ -45,8 +50,8 @@ router.post('/register', [
 
     // Create new user
     const [result] = await pool.execute(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashedPassword]
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [name, email, hashedPassword, role]
     );
 
     // Get the created user

@@ -11,7 +11,10 @@ import Signup from './Components/Signup';
 import Automate from './Components/Automate';
 import Stat from './Components/Stat';
 import ActivityLog from './Components/ActivityLog';
-import Lists from './Components/Lists';
+import Invoice from './Components/Lists';
+import Mail from './Components/Mail';
+import UserGuide from './Components/UserGuide';
+import AdminDashboard from './Components/AdminDashboard';
 import './Components/Change.css';
 import './Components/Interface.css';
 import dashboardIcon from './assets/dashboard.png';
@@ -28,14 +31,13 @@ import { FiLogOut } from 'react-icons/fi';
 const sidebarItems = [
   { icon: dashboardIcon, label: "Dashboard", path: "/dashboard" },
   { icon: leadsIcon, label: "Leads", path: "/leads" },
-  { icon: chatsIcon, label: "Chats", path: "/chats" },
   { icon: whatsappIcon, label: "WhatsApp", path: "/whatsapp" },
   { icon: calendarIcon, label: "Calendar", path: "/calendar" },
-  { icon: listsIcon, label: "Lists", path: "/lists" },
+  { icon: listsIcon, label: "Invoice", path: "/lists" },
   { icon: mailIcon, label: "Mail", path: "/mail" },
   { icon: statsIcon, label: "Stats", path: "/stats" },
-  { icon: settingsIcon, label: "Settings", path: "/settings" },
-
+  { icon: settingsIcon, label: "User Guide", path: "/user-guide" },
+  { icon: settingsIcon, label: "Admin Panel", path: "/admin" },
 ];
 
 // Protected Route Component
@@ -162,7 +164,22 @@ function AppLayout() {
           } />
           <Route path="/lists" element={
             <ProtectedRoute>
-              <Lists />
+              <Invoice />
+            </ProtectedRoute>
+          } />
+          <Route path="/mail" element={
+            <ProtectedRoute>
+              <Mail />
+            </ProtectedRoute>
+          } />
+          <Route path="/user-guide" element={
+            <ProtectedRoute>
+              <UserGuide />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           } />
         </Routes>
@@ -177,14 +194,6 @@ export default function App() {
       <Router>
         <AppLayout />
       </Router>
-      <style>{`
-        /* Hide all scrollbars but keep scrolling functional */
-        ::-webkit-scrollbar { display: none !important; }
-        html, body, * {
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-      `}</style>
     </AuthProvider>
   );
 }

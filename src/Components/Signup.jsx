@@ -11,6 +11,7 @@ const industries = ["SaaS", "Retail", "Manufacturing", "Finance", "Healthcare", 
 const companySizes = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 const countries = ["India", "United States", "United Kingdom", "Canada", "Australia", "Other"];
 const timeZones = ["IST (UTC+5:30)", "UTC", "EST (UTC-5)", "PST (UTC-8)", "CET (UTC+1)", "Other"];
+const roles = ["admin", "employee"];
 
 const Signup = () => {
   const [fullName, setFullName] = useState("");
@@ -28,6 +29,7 @@ const Signup = () => {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [timeZone, setTimeZone] = useState("");
+  const [role, setRole] = useState("");
   const navigate = useNavigate();
 
   const handlePasswordChange = (e) => {
@@ -39,7 +41,7 @@ const Signup = () => {
     setShowConfirmPasswordAnim(e.target.value.length > 0);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!/^[a-zA-Z ]+$/.test(fullName)) {
       alert("Name should contain only alphabets and spaces!");
@@ -62,8 +64,33 @@ const Signup = () => {
       return;
     }
     // Add signup logic here
-    alert("Account created!");
-    navigate("/login");
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+          role, // send selected role
+          // You can add more fields if backend supports (company, etc.)
+        })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert("Account created! Please login.");
+        navigate("/login");
+      } else {
+        // Show detailed error if available
+        if (data.errors && Array.isArray(data.errors)) {
+          alert(data.errors.map(e => e.msg).join("\n"));
+        } else {
+          alert(data.message || "Signup failed");
+        }
+      }
+    } catch (err) {
+      alert("Signup failed. Please try again later.");
+    }
   };
 
   return (
@@ -117,15 +144,10 @@ const Signup = () => {
                 className="login-input"
                 required
               />
-              {showPasswordAnim && (
-                <div className="password-lottie-anim">
-                  <Lottie animationData={passwordLottieUrl} loop={true} style={{ width: 48, height: 48 }} />
-                </div>
-              )}
               <span
                 className="password-eye-icon"
                 onClick={() => setShowPassword((prev) => !prev)}
-                style={{ position: 'absolute', right: showPasswordAnim ? 0 : 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', zIndex: 3 }}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', zIndex: 3 }}
               >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
               </span>
@@ -140,15 +162,10 @@ const Signup = () => {
                 className="login-input"
                 required
               />
-              {showConfirmPasswordAnim && (
-                <div className="password-lottie-anim">
-                  <Lottie animationData={passwordLottieUrl} loop={true} style={{ width: 48, height: 48 }} />
-                </div>
-              )}
               <span
                 className="password-eye-icon"
                 onClick={() => setShowConfirmPassword((prev) => !prev)}
-                style={{ position: 'absolute', right: showConfirmPasswordAnim ? 0 : 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', zIndex: 3 }}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', zIndex: 3 }}
               >
                 {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
               </span>
@@ -183,7 +200,7 @@ const Signup = () => {
               />
             </div>
             <div className="login-input-group">
-              <span className="login-input-icon"><FiGlobe /></span>
+              <span className="login-input-icon"><FiUsers /></span>
               <select
                 className="login-input"
                 value={industry}
@@ -250,6 +267,20 @@ const Signup = () => {
                 <option value="">Time Zone</option>
                 {timeZones.map((tz) => (
                   <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
+            </div>
+            <div className="login-input-group">
+              <span className="login-input-icon"><FiUsers /></span>
+              <select
+                className="login-input"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                required
+              >
+                <option value="">Select Role</option>
+                {roles.map((r) => (
+                  <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                 ))}
               </select>
             </div>

@@ -67,9 +67,27 @@ CREATE TABLE IF NOT EXISTS tasks (
   description TEXT,
   due_date DATE,
   user_id INT,
+  type VARCHAR(100) DEFAULT 'Follow up',
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Create activity_logs table to track all CRM activities
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  object_type ENUM('Lead', 'Contact', 'Invoice', 'Task', 'System') NOT NULL,
+  object_id INT,
+  object_name VARCHAR(255) NOT NULL,
+  event_type VARCHAR(100) NOT NULL,
+  event_description TEXT,
+  value_before JSON,
+  value_after JSON,
+  impact ENUM('positive', 'negative', 'neutral') DEFAULT 'neutral',
+  priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Insert default admin user (password: admin123)
@@ -87,4 +105,26 @@ INSERT INTO leads (name, amount, stage, pipeline, contact_name, contact_phone, c
 ('Emily Davis', 30000.00, 'Initial', 'Sales Pipeline', 'Emily Davis', '+1444333222', 'emily@startup.com', 'Startup Inc', 1, 1, 'active', 'Website', 'low'),
 ('Robert Wilson', 80000.00, 'Discussion', 'Sales Pipeline', 'Robert Wilson', '+1777888999', 'robert@consulting.com', 'Consulting Group', 1, 1, 'active', 'Referral', 'medium'),
 ('Lisa Anderson', 45000.00, 'Proposal', 'Sales Pipeline', 'Lisa Anderson', '+1666555444', 'lisa@retail.com', 'Retail Solutions', 1, 1, 'active', 'Cold Call', 'high')
+ON DUPLICATE KEY UPDATE id=id; 
+
+-- Insert sample activity logs
+INSERT INTO activity_logs (user_id, object_type, object_id, object_name, event_type, event_description, value_before, value_after, impact, priority) VALUES 
+(1, 'Lead', 1, 'Lead #1', 'Lead created', 'New lead created from website contact form', '[]', '[{"type": "Source", "value": "Website", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'medium'),
+(1, 'Lead', 1, 'Lead #1', 'Sales stage changed', 'Lead moved from initial contact to discussions', '[{"type": "Pipeline", "value": "Initial contact", "color": "blue"}]', '[{"type": "Pipeline", "value": "Discussions", "color": "teal"}]', 'positive', 'medium'),
+(1, 'Lead', 2, 'Lead #2', 'Lead created', 'New lead created from referral', '[]', '[{"type": "Source", "value": "Referral", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'medium'),
+(1, 'Lead', 2, 'Lead #2', 'Sales stage changed', 'Lead progressed to discussion stage', '[{"type": "Pipeline", "value": "Initial contact", "color": "blue"}]', '[{"type": "Pipeline", "value": "Discussions", "color": "teal"}]', 'positive', 'medium'),
+(1, 'Lead', 3, 'Lead #3', 'Lead created', 'New lead created from cold call', '[]', '[{"type": "Source", "value": "Cold Call", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'high'),
+(1, 'Lead', 3, 'Lead #3', 'Sales stage changed', 'Lead moved to proposal stage', '[{"type": "Pipeline", "value": "Discussions", "color": "teal"}]', '[{"type": "Pipeline", "value": "Proposal", "color": "yellow"}]', 'positive', 'high'),
+(1, 'Lead', 4, 'Lead #4', 'Lead created', 'New lead created from social media', '[]', '[{"type": "Source", "value": "Social Media", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'medium'),
+(1, 'Lead', 4, 'Lead #4', 'Sales stage changed', 'Lead moved to negotiation stage', '[{"type": "Pipeline", "value": "Proposal", "color": "yellow"}]', '[{"type": "Pipeline", "value": "Negotiation", "color": "orange"}]', 'positive', 'medium'),
+(1, 'Lead', 5, 'Lead #5', 'Lead created', 'New lead created from conference', '[]', '[{"type": "Source", "value": "Conference", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'high'),
+(1, 'Lead', 5, 'Lead #5', 'Lead won', 'Lead successfully converted to customer', '[{"type": "Pipeline", "value": "Negotiation", "color": "orange"}]', '[{"type": "Pipeline", "value": "Closed - Won", "color": "green"}]', 'positive', 'high'),
+(1, 'Lead', 6, 'Lead #6', 'Lead created', 'New lead created from website', '[]', '[{"type": "Source", "value": "Website", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'low'),
+(1, 'Lead', 7, 'Lead #7', 'Lead created', 'New lead created from referral', '[]', '[{"type": "Source", "value": "Referral", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'medium'),
+(1, 'Lead', 7, 'Lead #7', 'Sales stage changed', 'Lead moved to discussion stage', '[{"type": "Pipeline", "value": "Initial contact", "color": "blue"}]', '[{"type": "Pipeline", "value": "Discussions", "color": "teal"}]', 'positive', 'medium'),
+(1, 'Lead', 8, 'Lead #8', 'Lead created', 'New lead created from cold call', '[]', '[{"type": "Source", "value": "Cold Call", "color": "blue"}, {"type": "Stage", "value": "Initial contact", "color": "blue"}]', 'positive', 'high'),
+(1, 'Lead', 8, 'Lead #8', 'Sales stage changed', 'Lead moved to proposal stage', '[{"type": "Pipeline", "value": "Discussions", "color": "teal"}]', '[{"type": "Pipeline", "value": "Proposal", "color": "yellow"}]', 'positive', 'high'),
+(1, 'Task', 1, 'Follow up call - ABC Corp', 'Task created', 'New task created for follow up call', '[]', '[{"type": "Due Date", "value": "2025-07-22", "color": "blue"}, {"type": "Priority", "value": "High", "color": "red"}]', 'positive', 'medium'),
+(1, 'Task', 1, 'Follow up call - ABC Corp', 'Task completed', 'Follow up call task marked as completed', '[{"type": "Status", "value": "In Progress", "color": "yellow"}]', '[{"type": "Status", "value": "Completed", "color": "green"}]', 'positive', 'medium'),
+(1, 'System', NULL, 'Activity Log', 'Data refreshed', 'Activity log data refreshed successfully', '[]', '[{"type": "Status", "value": "Updated", "color": "green"}]', 'positive', 'low')
 ON DUPLICATE KEY UPDATE id=id; 
