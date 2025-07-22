@@ -107,4 +107,43 @@ export const adminAPI = {
   getMonthlyAnalytics: () => api.get('/admin/analytics/monthly'),
 };
 
+// Company Dashboard APIs
+export const companyAPI = {
+  // Get company statistics
+  getCompanyStats: (dateRange = 'month') => 
+    api.get(`/admin/company-stats?dateRange=${dateRange}`),
+
+  // Get revenue data
+  getRevenueData: (dateRange = 'month') => 
+    api.get(`/admin/revenue-data?dateRange=${dateRange}`),
+
+  // Get team performance
+  getTeamPerformance: () => 
+    api.get('/admin/team-performance'),
+
+  // Get payment history
+  getPaymentHistory: () => 
+    api.get('/admin/payment-history'),
+
+  // Get user activity
+  getUserActivity: () => 
+    api.get('/admin/user-activity'),
+
+  // Get blocked users
+  getBlockedUsers: () => 
+    api.get('/admin/blocked-users'),
+
+  // Get login history
+  getLoginHistory: () => 
+    api.get('/admin/login-history'),
+
+  // Block user
+  blockUser: (userId) => 
+    api.post(`/admin/block-user/${userId}`),
+
+  // Unblock user
+  unblockUser: (userId) => 
+    api.post(`/admin/unblock-user/${userId}`),
+};
+
 export default api; 

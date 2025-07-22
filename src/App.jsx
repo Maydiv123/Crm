@@ -15,6 +15,7 @@ import Invoice from './Components/Lists';
 import Mail from './Components/Mail';
 import UserGuide from './Components/UserGuide';
 import AdminDashboard from './Components/AdminDashboard';
+import CompanyDashboard from './Components/CompanyDashboard';
 import './Components/Change.css';
 import './Components/Interface.css';
 import dashboardIcon from './assets/dashboard.png';
@@ -38,6 +39,7 @@ const sidebarItems = [
   { icon: statsIcon, label: "Stats", path: "/stats" },
   { icon: settingsIcon, label: "User Guide", path: "/user-guide" },
   { icon: settingsIcon, label: "Admin Panel", path: "/admin" },
+  { icon: settingsIcon, label: "Company Dashboard", path: "/company" },
 ];
 
 // Protected Route Component
@@ -67,7 +69,7 @@ function AppLayout() {
   };
   
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div style={{ display: 'flex', height: '100vh',  overflow: 'hidden'}}>
       {!isNoSidebar && (
         <aside className="crm-sidebar">
           <div className="crm-logo">A</div>
@@ -122,7 +124,7 @@ function AppLayout() {
           </div>
         </aside>
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto'}}>
         <Routes>
           <Route path="/" element={<Introduction />} />
           <Route path="/login" element={<Login />} />
@@ -180,6 +182,11 @@ function AppLayout() {
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/company" element={
+            <ProtectedRoute>
+              <CompanyDashboard />
             </ProtectedRoute>
           } />
         </Routes>

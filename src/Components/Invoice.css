@@ -548,6 +548,7 @@
   width: 900px;
   max-height: 90vh;
   overflow-y: auto;
+  background-color: white;
 }
 
 .invoice-modal-header {

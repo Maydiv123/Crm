@@ -388,7 +388,7 @@ const AdminDashboard = () => {
                     <td>
                       <div className="user-info">
                         {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="user-avatar" />
+                        <img src={user.avatar} alt={user.name} className="user-avatar" />
                         ) : (
                           <div className="user-avatar-placeholder">
                             {user.name.charAt(0).toUpperCase()}

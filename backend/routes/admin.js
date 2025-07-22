@@ -468,4 +468,282 @@ router.get('/analytics/monthly', auth, requireAdmin, async (req, res) => {
   }
 });
 
+// Get company statistics
+router.get('/company-stats', auth, requireAdmin, async (req, res) => {
+  try {
+    const { dateRange = 'month' } = req.query;
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch (dateRange) {
+      case 'week':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case 'year':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(now.getMonth() - 1);
+    }
+
+    // Get total revenue
+    const [revenueResult] = await pool.execute(`
+      SELECT COALESCE(SUM(amount), 0) as total_revenue
+      FROM payments
+      WHERE status = 'completed' AND created_at >= ?
+    `, [startDate]);
+
+    // Get total leads
+    const [leadsResult] = await pool.execute(`
+      SELECT COUNT(*) as total_leads
+      FROM leads
+      WHERE createdAt >= ?
+    `, [startDate]);
+
+    // Get conversion rate
+    const [conversionResult] = await pool.execute(`
+      SELECT 
+        COUNT(CASE WHEN status = 'won' THEN 1 END) as won_leads,
+        COUNT(*) as total_leads
+      FROM leads
+      WHERE createdAt >= ?
+    `, [startDate]);
+
+    // Get active customers
+    const [customersResult] = await pool.execute(`
+      SELECT COUNT(DISTINCT user_id) as active_customers
+      FROM user_packages
+      WHERE status = 'active'
+    `);
+
+    // Get total employees
+    const [employeesResult] = await pool.execute(`
+      SELECT COUNT(*) as total_employees
+      FROM users
+      WHERE role IN ('admin', 'user', 'manager')
+    `);
+
+    // Get total messages
+    const [messagesResult] = await pool.execute(`
+      SELECT COUNT(*) as total_messages
+      FROM messages
+      WHERE created_at >= ?
+    `, [startDate]);
+
+    // Get active packages
+    const [packagesResult] = await pool.execute(`
+      SELECT COUNT(*) as active_packages
+      FROM packages
+      WHERE status = 'active'
+    `);
+
+    // Get pending payments
+    const [pendingResult] = await pool.execute(`
+      SELECT COALESCE(SUM(amount), 0) as pending_payments
+      FROM payments
+      WHERE status = 'pending'
+    `);
+
+    const conversionRate = conversionResult[0].total_leads > 0 
+      ? (conversionResult[0].won_leads / conversionResult[0].total_leads * 100).toFixed(1)
+      : 0;
+
+    const stats = {
+      totalRevenue: revenueResult[0].total_revenue,
+      totalLeads: leadsResult[0].total_leads,
+      conversionRate: parseFloat(conversionRate),
+      activeCustomers: customersResult[0].active_customers,
+      totalEmployees: employeesResult[0].total_employees,
+      totalMessages: messagesResult[0].total_messages,
+      activePackages: packagesResult[0].active_packages,
+      pendingPayments: pendingResult[0].pending_payments
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching company stats:', error);
+    res.status(500).json({ message: 'Error fetching company stats' });
+  }
+});
+
+// Get revenue data
+router.get('/revenue-data', auth, requireAdmin, async (req, res) => {
+  try {
+    const { dateRange = 'month' } = req.query;
+    
+    // Mock revenue data for now
+    const revenueData = [
+      { month: 'Jan', revenue: 45000, leads: 120, customers: 85 },
+      { month: 'Feb', revenue: 52000, leads: 135, customers: 92 },
+      { month: 'Mar', revenue: 48000, leads: 110, customers: 88 },
+      { month: 'Apr', revenue: 61000, leads: 150, customers: 105 },
+      { month: 'May', revenue: 58000, leads: 140, customers: 98 },
+      { month: 'Jun', revenue: 72000, leads: 180, customers: 125 },
+    ];
+
+    res.json(revenueData);
+  } catch (error) {
+    console.error('Error fetching revenue data:', error);
+    res.status(500).json({ message: 'Error fetching revenue data' });
+  }
+});
+
+// Get team performance
+router.get('/team-performance', auth, requireAdmin, async (req, res) => {
+  try {
+    const [teamData] = await pool.execute(`
+      SELECT 
+        u.name,
+        COUNT(l.id) as leads,
+        COALESCE(SUM(l.amount), 0) as revenue,
+        CASE 
+          WHEN COUNT(l.id) > 0 THEN 
+            ROUND((COUNT(CASE WHEN l.status = 'won' THEN 1 END) * 100.0 / COUNT(l.id)), 1)
+          ELSE 0 
+        END as conversion
+      FROM users u
+      LEFT JOIN leads l ON u.id = l.assigned_to
+      WHERE u.role IN ('admin', 'user', 'manager')
+      GROUP BY u.id, u.name
+      ORDER BY revenue DESC
+    `);
+
+    res.json(teamData);
+  } catch (error) {
+    console.error('Error fetching team performance:', error);
+    res.status(500).json({ message: 'Error fetching team performance' });
+  }
+});
+
+// Get payment history
+router.get('/payment-history', auth, requireAdmin, async (req, res) => {
+  try {
+    const [payments] = await pool.execute(`
+      SELECT 
+        p.id,
+        u.name as user,
+        p.amount,
+        p.status,
+        p.created_at as date,
+        p.payment_method as method
+      FROM payments p
+      LEFT JOIN users u ON p.user_id = u.id
+      ORDER BY p.created_at DESC
+      LIMIT 50
+    `);
+
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching payment history:', error);
+    res.status(500).json({ message: 'Error fetching payment history' });
+  }
+});
+
+// Get user activity
+router.get('/user-activity', auth, requireAdmin, async (req, res) => {
+  try {
+    const [activity] = await pool.execute(`
+      SELECT 
+        al.user_id,
+        u.name as user_name,
+        al.event_type as action,
+        al.event_description as description,
+        al.created_at
+      FROM activity_logs al
+      LEFT JOIN users u ON al.user_id = u.id
+      ORDER BY al.created_at DESC
+      LIMIT 100
+    `);
+
+    res.json(activity);
+  } catch (error) {
+    console.error('Error fetching user activity:', error);
+    res.status(500).json({ message: 'Error fetching user activity' });
+  }
+});
+
+// Get blocked users
+router.get('/blocked-users', auth, requireAdmin, async (req, res) => {
+  try {
+    const [blockedUsers] = await pool.execute(`
+      SELECT 
+        id,
+        name,
+        email,
+        role,
+        isActive as status
+      FROM users
+      WHERE isActive = 0
+      ORDER BY updatedAt DESC
+    `);
+
+    res.json(blockedUsers);
+  } catch (error) {
+    console.error('Error fetching blocked users:', error);
+    res.status(500).json({ message: 'Error fetching blocked users' });
+  }
+});
+
+// Get login history
+router.get('/login-history', auth, requireAdmin, async (req, res) => {
+  try {
+    // Mock login history data for now
+    const loginHistory = [
+      { user: 'Admin User', email: 'admin@crm.com', lastLogin: '2025-07-22 10:30', ip: '192.168.1.100', status: 'active' },
+      { user: 'John Doe', email: 'john@company.com', lastLogin: '2025-07-22 09:15', ip: '192.168.1.101', status: 'active' },
+      { user: 'Jane Smith', email: 'jane@company.com', lastLogin: '2025-07-21 16:45', ip: '192.168.1.102', status: 'blocked' },
+      { user: 'Mike Johnson', email: 'mike@company.com', lastLogin: '2025-07-21 14:20', ip: '192.168.1.103', status: 'active' },
+    ];
+
+    res.json(loginHistory);
+  } catch (error) {
+    console.error('Error fetching login history:', error);
+    res.status(500).json({ message: 'Error fetching login history' });
+  }
+});
+
+// Block user
+router.post('/block-user/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await pool.execute(`
+      UPDATE users 
+      SET isActive = 0, updatedAt = NOW()
+      WHERE id = ?
+    `, [id]);
+
+    res.json({ message: 'User blocked successfully' });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    res.status(500).json({ message: 'Error blocking user' });
+  }
+});
+
+// Unblock user
+router.post('/unblock-user/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await pool.execute(`
+      UPDATE users 
+      SET isActive = 1, updatedAt = NOW()
+      WHERE id = ?
+    `, [id]);
+
+    res.json({ message: 'User unblocked successfully' });
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    res.status(500).json({ message: 'Error unblocking user' });
+  }
+});
+
 export default router; 

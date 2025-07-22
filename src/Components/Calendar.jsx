@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import './Calendar.css';
-import { FaPhone, FaBriefcase, FaRegClock } from 'react-icons/fa';
+import { FaPhone, FaBriefcase, FaRegClock, FaCalendarAlt, FaPlus, FaSync, FaEllipsisV } from 'react-icons/fa';
 import NewTaskModal from './NewTaskModal';
 import './NewTaskModal.css';
 import { tasksAPI } from '../services/api';
 
 function getWeekDates(date) {
-  // Returns array of Date objects for the week (Sun-Sat) containing 'date'
   const d = new Date(date);
   const week = [];
   const sunday = new Date(d.setDate(d.getDate() - d.getDay()));
@@ -19,7 +18,6 @@ function getWeekDates(date) {
 }
 
 function getMonthMatrix(date) {
-  // Returns a matrix (array of weeks) for the month containing 'date'
   const d = new Date(date.getFullYear(), date.getMonth(), 1);
   const firstDay = d.getDay();
   const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -40,7 +38,7 @@ function getMonthMatrix(date) {
 }
 
 const Calendar = () => {
-  const [tab, setTab] = useState('day');
+  const [tab, setTab] = useState('month');
   const [weekStart, setWeekStart] = useState(() => {
     const now = new Date();
     return new Date(now.setDate(now.getDate() - now.getDay()));
@@ -55,7 +53,7 @@ const Calendar = () => {
   const [taskTypes, setTaskTypes] = useState([
     { icon: <FaPhone />, value: 'Follow-up' },
     { icon: <FaBriefcase />, value: 'Meeting' },
-    { icon: <FaRegClock />, value: '', disabled: true },
+    { icon: <FaRegClock />, value: 'Reminder' },
   ]);
   const handleTaskTypeChange = (i, val) => {
     setTaskTypes(prev => prev.map((t, idx) => idx === i ? { ...t, value: val } : t));
@@ -105,27 +103,24 @@ const Calendar = () => {
   ];
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch tasks on mount
   React.useEffect(() => {
     const fetchTasks = () => {
+      setIsLoading(true);
       tasksAPI.getAllTasks().then(res => {
         if (res.data && res.data.tasks) {
           setTasks(res.data.tasks);
-          console.log('Fetched tasks:', res.data.tasks.length); // Debug log
-          console.log('Task details:', res.data.tasks.map(t => ({
-            id: t.id,
-            title: t.title,
-            due_date: t.due_date,
-            description: t.description
-          })));
+          console.log('Fetched tasks:', res.data.tasks.length);
         }
+        setIsLoading(false);
       }).catch(err => {
         console.error('Error fetching tasks:', err);
+        setIsLoading(false);
       });
     };
     fetchTasks();
-    // Listen for custom event to refetch tasks
     const handler = () => fetchTasks();
     window.addEventListener('tasks-updated', handler);
     return () => window.removeEventListener('tasks-updated', handler);
@@ -137,10 +132,8 @@ const Calendar = () => {
       const response = await tasksAPI.create(task);
       console.log('Task created:', response.data);
       
-      // Add the new task to the current tasks list
       setTasks(prevTasks => [...prevTasks, response.data]);
       
-      // Also refetch all tasks to ensure consistency
       const res = await tasksAPI.getAllTasks();
       if (res.data && res.data.tasks) {
         setTasks(res.data.tasks);
@@ -151,31 +144,79 @@ const Calendar = () => {
     }
   };
 
+  // Helper function to get tasks for a specific date
+  const getTasksForDate = (date) => {
+    const dateString = date.toISOString().slice(0, 10);
+    return tasks.filter(task => task.due_date && task.due_date.slice(0, 10) === dateString);
+  };
+
+  // Helper function to format task display
+  const formatTaskDisplay = (task) => {
+    return (
+      <div key={task.id} className="calendar-task-item">
+        <div style={{ fontWeight: '600', fontSize: '11px', marginBottom: '2px' }}>
+          {task.title}
+        </div>
+        {task.description && (
+          <div style={{ fontSize: '10px', opacity: 0.8, lineHeight: '1.2' }}>
+            {task.description.length > 20 ? task.description.substring(0, 20) + '...' : task.description}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Get task count for today
+  const getTodayTaskCount = () => {
+    const today = new Date();
+    return getTasksForDate(today).length;
+  };
+
   return (
     <div className="calendar-root">
       <div className="calendar-header">
         <div className="calendar-tabs">
-          <button className={tab === 'day' ? 'active' : ''} onClick={() => setTab('day')}>DAY</button>
-          <button className={tab === 'week' ? 'active' : ''} onClick={() => setTab('week')}>WEEK</button>
-          <button className={tab === 'month' ? 'active' : ''} onClick={() => setTab('month')}>MONTH</button>
+          <button className={tab === 'day' ? 'active' : ''} onClick={() => setTab('day')}>
+            <FaCalendarAlt style={{ marginRight: '6px' }} />
+            DAY
+          </button>
+          <button className={tab === 'week' ? 'active' : ''} onClick={() => setTab('week')}>
+            <FaCalendarAlt style={{ marginRight: '6px' }} />
+            WEEK
+          </button>
+          <button className={tab === 'month' ? 'active' : ''} onClick={() => setTab('month')}>
+            <FaCalendarAlt style={{ marginRight: '6px' }} />
+            MONTH
+          </button>
         </div>
         <div className="calendar-filters">
           <button className="calendar-my-tasks active">My Tasks</button>
           <button className="calendar-new-filter" onClick={() => setShowFilterPanel(true)}>New filter</button>
         </div>
         <div className="calendar-header-actions">
-          <span className="calendar-todos-count">0 to-dos</span>
-          <button className="calendar-sync-btn">SYNC</button>
+          <span className="calendar-todos-count">
+            {isLoading ? 'Loading...' : `${getTodayTaskCount()} to-dos today`}
+          </span>
+          <button className="calendar-sync-btn" onClick={() => window.location.reload()}>
+            <FaSync style={{ marginRight: '6px' }} />
+            SYNC
+          </button>
           <div style={{ position: 'relative', display: 'inline-block' }}>
-            <button className="calendar-menu-btn" onClick={() => setMenuOpen((v) => !v)}>⋮</button>
+            <button className="calendar-menu-btn" onClick={() => setMenuOpen((v) => !v)}>
+              <FaEllipsisV />
+            </button>
             {menuOpen && (
               <div className="calendar-menu-dropdown">
-                <div className="calendar-menu-option">Export</div>
+                <div className="calendar-menu-option">Export Calendar</div>
                 <div className="calendar-menu-option" onClick={() => { setShowManageTaskTypes(true); setMenuOpen(false); }}>Manage task types</div>
+                <div className="calendar-menu-option">Settings</div>
               </div>
             )}
           </div>
-          <button className="calendar-new-task-btn" onClick={() => { setShowNewTaskModal(true); console.log('Button clicked, modal should open'); }}>+ NEW TASK</button>
+          <button className="calendar-new-task-btn" onClick={() => { setShowNewTaskModal(true); console.log('Button clicked, modal should open'); }}>
+            <FaPlus style={{ marginRight: '6px' }} />
+            NEW TASK
+          </button>
         </div>
       </div>
       {tab === 'week' ? (
@@ -199,30 +240,30 @@ const Calendar = () => {
             </div>
             <div className="calendar-week-days">
               <div className="calendar-week-days-row">
-                {weekDates.map((d, i) => (
-                  <div className="calendar-week-day-header" key={i}>
-                    <div>{d.toLocaleDateString(undefined, { weekday: 'short' })}</div>
-                    <div>{d.getDate()}</div>
-                  </div>
-                ))}
+                {weekDates.map((d, i) => {
+                  const isToday = d.toDateString() === new Date().toDateString();
+                  return (
+                    <div className="calendar-week-day-header" key={i} style={{
+                      background: isToday ? 'rgba(102, 126, 234, 0.1)' : 'rgba(248, 249, 250, 0.9)'
+                    }}>
+                      <div style={{ fontSize: '12px', fontWeight: '500', color: '#6c757d', marginBottom: '4px' }}>
+                        {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                      </div>
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '600',
+                        color: isToday ? '#667eea' : '#2c3e50'
+                      }}>
+                        {d.getDate()}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <div className="calendar-week-days-cols">
                 {weekDates.map((d, i) => (
                   <div className="calendar-week-day-col" key={i}>
-                    {/* Show tasks for this day at the top */}
-                    {tasks.filter(t => {
-                      const taskDate = t.due_date && t.due_date.slice(0,10);
-                      const dayDate = d.toISOString().slice(0,10);
-                      const matches = taskDate === dayDate;
-                      if (matches) {
-                        console.log('Task matches date:', t.title, 'on', dayDate);
-                      }
-                      return matches;
-                    }).map(task => (
-                        <div key={task.id} className="calendar-task-item" style={{fontSize: '0.95em', margin: '2px 0'}}>
-                          <b>{task.title}</b><br/>{task.description}
-                        </div>
-                    ))}
+                    {getTasksForDate(d).map(task => formatTaskDisplay(task))}
                     {timeSlots.map((_, j) => (
                       <div className="calendar-week-cell" key={j}></div>
                     ))}
@@ -251,13 +292,7 @@ const Calendar = () => {
             </div>
             <div className="calendar-day-col">
               <div className="calendar-day-header">All day</div>
-              {tasks.filter(
-                t => t.due_date && t.due_date.slice(0,10) === dayDate.toISOString().slice(0,10)
-              ).map(task => (
-                <div key={task.id} className="calendar-task-item">
-                  <b>{task.title}</b><br/>{task.description}
-                </div>
-              ))}
+              {getTasksForDate(dayDate).map(task => formatTaskDisplay(task))}
               {timeSlots.map((_, j) => (
                 <div className="calendar-day-cell" key={j}></div>
               ))}
@@ -284,21 +319,50 @@ const Calendar = () => {
               <div className="calendar-month-week" key={i}>
                 {week.map((day, j) => {
                   const isCurrentMonth = day.getMonth() === monthDate.getMonth();
-                  const isFirstOfMonth = day.getDate() === 1 && isCurrentMonth;
+                  const isToday = day.toDateString() === new Date().toDateString();
+                  const dayTasks = getTasksForDate(day);
+                  
                   return (
                     <div className={`calendar-month-cell${isCurrentMonth ? '' : ' calendar-month-cell-out'}`} key={j}>
-                      <div className="calendar-month-cell-date">
-                        {isFirstOfMonth
-                          ? `${day.getDate()} ${day.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`
-                          : day.getDate()}
+                      <div className="calendar-month-cell-date" style={{
+                        color: isToday ? '#667eea' : undefined,
+                        fontWeight: isToday ? '700' : '600',
+                        background: isToday ? 'rgba(102, 126, 234, 0.1)' : 'transparent',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '8px'
+                      }}>
+                        {day.getDate()}
                       </div>
-                      {/* Show tasks for this day */}
-                      {tasks.filter(t => t.due_date && t.due_date.slice(0,10) === day.toISOString().slice(0,10))
-                        .map(task => (
-                          <div key={task.id} className="calendar-task-item" style={{fontSize: '0.9em', marginTop: 2}}>
-                            {task.title}
+                      {dayTasks.slice(0, 3).map(task => (
+                        <div key={task.id} className="calendar-task-item" style={{
+                          fontSize: '10px',
+                          marginTop: '2px',
+                          padding: '4px 6px'
+                        }}>
+                          <div style={{ fontWeight: '600', marginBottom: '1px' }}>
+                            {task.title.length > 15 ? task.title.substring(0, 15) + '...' : task.title}
                           </div>
+                        </div>
                       ))}
+                      {dayTasks.length > 3 && (
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#6c757d',
+                          marginTop: '2px',
+                          fontStyle: 'italic',
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}>
+                          +{dayTasks.length - 3} more
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -320,6 +384,7 @@ const Calendar = () => {
           </div>
         </div>
       )}
+      
       {showManageTaskTypes && (
         <div className="calendar-manage-task-overlay">
           <div className="calendar-manage-task-content">
