@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import Task from './Task';
 import Notes from './Notes';
 import Files from './Files';
+import { usePipeline } from '../context/PipelineContext';
 
 const sidebarItems = [
   { icon: "🏠", label: "Dashboard" },
@@ -328,22 +329,18 @@ export default function Interface({ onSidebarNav, navigate }) {
     { time: '12:12PM', text: 'The value of the field «Phone» is set to «09625613008»' },
     { time: '12:12PM', text: 'The value of the field «Name» is set to «Abhishek kumar»' },
   ]);
-  // Replace pipelineStages and related logic with pipelines array and selectedPipelineIndex
-  const [pipelines, setPipelines] = useState([
-    {
-      name: "Sales Pipeline",
-      stages: [
-        "Initial Contact",
-        "Contacted",
-        "Discussions",
-        "Decision Making",
-        "Contract Discussion",
-        "Closed - won",
-        "Closed - lost",
-      ],
-    },
-  ]);
-  const [selectedPipelineIndex, setSelectedPipelineIndex] = useState(null);
+  
+  // Use global pipeline context
+  const { 
+    pipelines, 
+    selectedPipelineIndex, 
+    setSelectedPipelineIndex, 
+    updatePipelines, 
+    addPipeline, 
+    updatePipeline, 
+    deletePipeline,
+    fetchPipelines 
+  } = usePipeline();
   // Add state for context menu and renaming
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, index: null });
   const [renamingIndex, setRenamingIndex] = useState(null);
@@ -388,6 +385,32 @@ export default function Interface({ onSidebarNav, navigate }) {
   // Add this state:
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [leadModalPipelineIndex, setLeadModalPipelineIndex] = useState(0);
+  const [activeDotIndex, setActiveDotIndex] = useState({}); // Track active dot for each lead
+
+  // Function to get data based on active dot
+  const getDotData = (lead, dotIndex) => {
+    const dotData = [
+      {
+        label: "Initial Contact",
+        value: "₹0",
+        contact: lead.contactPhone || "...",
+        status: "New Lead"
+      },
+      {
+        label: "Discussion",
+        value: "₹" + (lead.amount || 0),
+        contact: lead.contactEmail || "...",
+        status: "In Progress"
+      },
+      {
+        label: "Contract",
+        value: "₹" + (lead.amount || 0),
+        contact: lead.contactPhone || "...",
+        status: "Negotiating"
+      }
+    ];
+    return dotData[dotIndex] || dotData[0];
+  };
 
   const quickOptions = [
     { label: 'Today', get: () => { const d = new Date(); d.setHours(0,0,0,0); return d; }, key: 'today' },
@@ -501,19 +524,8 @@ export default function Interface({ onSidebarNav, navigate }) {
     setNewPipelineName(e.target.value);
   };
 
-  // Fetch all pipelines from backend on mount
-  React.useEffect(() => {
-    pipelineAPI.getAll().then(res => {
-      if (res.data && res.data.pipelines && res.data.pipelines.length > 0) {
-        setPipelines(res.data.pipelines.map(p => ({
-          id: p.id, // include id for backend actions
-          name: p.name,
-          stages: p.stages.map(s => s.label),
-        })));
-        setSelectedPipelineIndex(0); // Always select the first pipeline after refresh
-      }
-    });
-  }, []);
+  // Pipeline data is now managed by global context
+  // No need to fetch here as it's handled by PipelineProvider
 
   const handlePipelineNameSubmit = async (e) => {
     e.preventDefault();
@@ -524,21 +536,29 @@ export default function Interface({ onSidebarNav, navigate }) {
       "Offer Made",
       "Negotiation"
     ];
-    const newPipes = [
-      ...pipelines,
-      {
-        name: newPipelineName,
-        stages: newStages,
-      },
-    ];
-    setPipelines(newPipes);
-    setSelectedPipelineIndex(newPipes.length - 1); // Select the new pipeline
+    
+    // Create new pipeline object
+    const newPipeline = {
+      name: newPipelineName,
+      stages: newStages,
+    };
+    
+    // Add to global state
+    addPipeline(newPipeline);
+    setSelectedPipelineIndex(pipelines.length); // Select the new pipeline
+    
     // Save to backend
-    await pipelineAPI.create(newPipelineName, newStages.map(stage => ({
-      key: stage.toLowerCase().replace(/ /g, ''),
-      label: stage,
-      isDefault: false,
-    })));
+    try {
+      await pipelineAPI.create(newPipelineName, newStages.map(stage => ({
+        key: stage.toLowerCase().replace(/ /g, ''),
+        label: stage,
+        isDefault: false,
+      })));
+      // Refresh pipelines from backend to get the ID
+      await fetchPipelines();
+    } catch (error) {
+      console.error('Error creating pipeline:', error);
+    }
   };
 
   const handleDotMenuClick = (e) => {
@@ -583,19 +603,19 @@ export default function Interface({ onSidebarNav, navigate }) {
   const handleRenameSubmit = async (e) => {
     e.preventDefault();
     const pipelineId = pipelines[renamingIndex]?.id;
-    setPipelines(pipelines.map((p, i) => i === renamingIndex ? { ...p, name: renameValue } : p));
+    
+    // Update in global state
+    updatePipeline(renamingIndex, { ...pipelines[renamingIndex], name: renameValue });
     setRenamingIndex(null);
     setRenameValue("");
+    
     if (pipelineId) {
-      await pipelineAPI.rename(pipelineId, renameValue);
-      // Refetch pipelines to sync state
-      const res = await pipelineAPI.getAll();
-      if (res.data && res.data.pipelines) {
-        setPipelines(res.data.pipelines.map(p => ({
-          id: p.id,
-          name: p.name,
-          stages: p.stages.map(s => s.label),
-        })));
+      try {
+        await pipelineAPI.rename(pipelineId, renameValue);
+        // Refresh pipelines from backend
+        await fetchPipelines();
+      } catch (error) {
+        console.error('Error renaming pipeline:', error);
       }
     }
   };
@@ -604,27 +624,27 @@ export default function Interface({ onSidebarNav, navigate }) {
   const handleDeletePipeline = async (idx) => {
     if (pipelines.length === 1) return; // Prevent deleting last pipeline
     const pipelineId = pipelines[idx]?.id;
-    const newPipes = pipelines.filter((_, i) => i !== idx);
-    setPipelines(newPipes);
+    
+    // Update global state
+    deletePipeline(idx);
     setContextMenu({ visible: false, x: 0, y: 0, index: null });
+    
     if (selectedPipelineIndex === idx) setSelectedPipelineIndex(0);
     else if (selectedPipelineIndex > idx) setSelectedPipelineIndex(selectedPipelineIndex - 1);
+    
     if (pipelineId) {
-      await pipelineAPI.delete(pipelineId);
-      // Refetch pipelines to sync state
-      const res = await pipelineAPI.getAll();
-      if (res.data && res.data.pipelines) {
-        setPipelines(res.data.pipelines.map(p => ({
-          id: p.id,
-          name: p.name,
-          stages: p.stages.map(s => s.label),
-        })));
+      try {
+        await pipelineAPI.delete(pipelineId);
+        // Refresh pipelines from backend
+        await fetchPipelines();
+      } catch (error) {
+        console.error('Error deleting pipeline:', error);
       }
     }
   };
 
   const handleSavePipeline = (newPipelines) => {
-    setPipelines(newPipelines);
+    updatePipelines(newPipelines);
     setShowEditPipeline(false);
   };
 
@@ -638,7 +658,26 @@ export default function Interface({ onSidebarNav, navigate }) {
   };
 
   const handleLeadUpdate = (updatedLead) => {
-    setLeads(leads => leads.map(lead => lead.id === updatedLead.id ? updatedLead : lead));
+    console.log('Interface: Received updated lead:', updatedLead);
+    console.log('Interface: Current leads before update:', leads);
+    
+    // Map backend field names to frontend field names for display
+    const mappedLead = {
+      ...updatedLead,
+      contactName: updatedLead.contactName || updatedLead.contact_name,
+      contactPhone: updatedLead.contactPhone || updatedLead.contact_phone,
+      contactEmail: updatedLead.contactEmail || updatedLead.contact_email,
+      contactPosition: updatedLead.contactPosition || updatedLead.contact_position,
+      companyName: updatedLead.companyName || updatedLead.company_name,
+      companyAddress: updatedLead.companyAddress || updatedLead.company_address,
+      amount: updatedLead.amount || updatedLead.sale
+    };
+    
+    setLeads(leads => {
+      const newLeads = leads.map(lead => lead.id === updatedLead.id ? mappedLead : lead);
+      console.log('Interface: Updated leads with mapped fields:', newLeads);
+      return newLeads;
+    });
   };
 
   const handleAddTodo = async () => {
@@ -721,7 +760,6 @@ export default function Interface({ onSidebarNav, navigate }) {
         <EditPipeline
           onClose={() => setShowEditPipeline(false)}
           pipelines={pipelines}
-          setPipelines={setPipelines}
           onSave={handleSavePipeline}
         />
       )}
@@ -1160,11 +1198,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                 <div
                   className="crm-lead-card crm-lead-card-modern"
                   key={i}
-                  style={{cursor:'pointer', position:'relative'}}
-                  onClick={() => {
-                    setSelectedLead(lead);
-                    setShowLeadDetail(true);
-                  }}
+                  style={{position:'relative'}}
                 >
                   {showListSettings && (
                     <input
@@ -1181,29 +1215,133 @@ export default function Interface({ onSidebarNav, navigate }) {
                       }}
                     />
                   )}
+                  
+                  {/* Priority Indicator */}
+                  <div className={`crm-lead-card-priority crm-lead-card-priority-${lead.priority || 'low'}`}></div>
+                  
+                  {/* Badge for new leads */}
+                  {lead.createdAt && new Date(lead.createdAt) > new Date(Date.now() - 24*60*60*1000) && (
+                    <div className="crm-lead-card-badge">New</div>
+                  )}
+                  
                   <div className="crm-lead-card-header">
                     <div className="crm-lead-card-avatar">{lead.contactName ? lead.contactName[0].toUpperCase() : 'L'}</div>
                     <div className="crm-lead-card-maininfo">
-                      <div className="crm-lead-card-title">{lead.contactName || lead.name || lead.company || 'No Name'}</div>
+                      <div 
+                        className="crm-lead-card-title"
+                        style={{cursor:'pointer'}}
+                        onClick={() => {
+                          setSelectedLead(lead);
+                          setShowLeadDetail(true);
+                        }}
+                      >
+                        {lead.contactName || lead.name || lead.company || 'No Name'}
+                      </div>
                       <div className="crm-lead-card-company">{lead.companyName || 'No Company'}</div>
                     </div>
                     <div className="crm-lead-card-status crm-lead-card-status-new">New</div>
                   </div>
+                  <div className="crm-lead-card-content">
                   <div className="crm-lead-card-row">
-                    <span className="crm-lead-card-label">Value:</span> <span className="crm-lead-card-value">₹0</span>
+                      <span className="crm-lead-card-label">Value:</span> <span className="crm-lead-card-value">{getDotData(lead, activeDotIndex[lead.id] || 0).value}</span>
                   </div>
                   <div className="crm-lead-card-row">
-                    <span className="crm-lead-card-label">Contact:</span> <span className="crm-lead-card-contact">{lead.contactPhone || '...'}</span>
+                      <span className="crm-lead-card-label">Contact:</span> <span className="crm-lead-card-contact">{getDotData(lead, activeDotIndex[lead.id] || 0).contact}</span>
                   </div>
-                  <div className="crm-lead-card-progress">
-                    <div className="crm-lead-card-progress-dot crm-lead-card-progress-dot-active" />
-                    <div className="crm-lead-card-progress-dot" />
-                    <div className="crm-lead-card-progress-dot" />
+                    <div className="crm-lead-card-row">
+                      <span className="crm-lead-card-label">Status:</span> <span className="crm-lead-card-value" style={{color: '#1abc9c', fontSize: '0.8rem'}}>{getDotData(lead, activeDotIndex[lead.id] || 0).status}</span>
+                    </div>
+                    <div className="crm-lead-card-progress" style={{display: 'flex', gap: '6px', margin: '12px 0 8px 0', justifyContent: 'center'}}>
+                      <div 
+                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 0 ? 'crm-lead-card-progress-dot-active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDotIndex(prev => ({
+                            ...prev,
+                            [lead.id]: 0
+                          }));
+                        }}
+                        title="Stage 1: Initial Contact"
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: (activeDotIndex[lead.id] || 0) === 0 ? '#1abc9c' : '#e9ecef',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                      <div 
+                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 1 ? 'crm-lead-card-progress-dot-active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDotIndex(prev => ({
+                            ...prev,
+                            [lead.id]: 1
+                          }));
+                        }}
+                        title="Stage 2: Discussion"
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: (activeDotIndex[lead.id] || 0) === 1 ? '#1abc9c' : '#e9ecef',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                      <div 
+                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 2 ? 'crm-lead-card-progress-dot-active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDotIndex(prev => ({
+                            ...prev,
+                            [lead.id]: 2
+                          }));
+                        }}
+                        title="Stage 3: Contract"
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: (activeDotIndex[lead.id] || 0) === 2 ? '#1abc9c' : '#e9ecef',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
                   </div>
                   <div className="crm-lead-card-actions">
-                    <span title="Call" className="crm-lead-card-action">📞</span>
-                    <span title="Email" className="crm-lead-card-action">✉️</span>
-                    <span title="Note" className="crm-lead-card-action">📝</span>
+                      <span 
+                        title="Call" 
+                        className="crm-lead-card-action"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Calling ${lead.contactName || lead.name || 'Lead'}`);
+                        }}
+                      >
+                        📞
+                      </span>
+                      <span 
+                        title="Email" 
+                        className="crm-lead-card-action"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Emailing ${lead.contactName || lead.name || 'Lead'}`);
+                        }}
+                      >
+                        ✉️
+                      </span>
+                      <span 
+                        title="Note" 
+                        className="crm-lead-card-action"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Adding note for ${lead.contactName || lead.name || 'Lead'}`);
+                        }}
+                      >
+                        📝
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

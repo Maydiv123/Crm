@@ -1006,26 +1006,220 @@ html, body, #root {
 }
 
 .crm-lead-card {
-  background: #fff;
-  border: 1px dashed #bdbdbd;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
   margin: 18px 0 0 0;
-  padding: 10px 14px 8px 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-width: 180px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   min-height: unset;
   height: auto;
   justify-content: flex-start;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
 }
+
+.crm-lead-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.crm-lead-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08);
+  border-color: #1abc9c;
+}
+
+.crm-lead-card:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.crm-lead-card-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  margin: 18px 0 0 0;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  margin-bottom: 16px;
+  min-height: unset;
+  height: auto;
+  justify-content: flex-start;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.crm-lead-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.crm-lead-card-modern:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08);
+  border-color: #1abc9c;
+}
+
+.crm-lead-card-modern:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.crm-lead-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 12px 18px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.crm-lead-card-avatar {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.crm-lead-card-avatar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.crm-lead-card-modern:hover .crm-lead-card-avatar::before {
+  left: 100%;
+}
+
+.crm-lead-card-maininfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .crm-lead-card-title {
+  color: #17404e;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px 4px -4px;
+}
+
+.crm-lead-card-title:hover {
   color: #1abc9c;
+  background: rgba(26, 188, 156, 0.1);
+}
+
+.crm-lead-card-company {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.crm-lead-card-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crm-lead-card-status-new {
+  background: linear-gradient(135deg, #e8f5e8, #d4edda);
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.crm-lead-card-priority {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #28a745;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.crm-lead-card-priority-high {
+  background: #dc3545;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.crm-lead-card-priority-medium {
+  background: #ffc107;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+.crm-lead-card-priority-low {
+  background: #28a745;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.crm-lead-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(26, 188, 156, 0.3);
 }
 .crm-lead-card-footer {
   display: flex;
@@ -1034,10 +1228,117 @@ html, body, #root {
   font-size: 0.95rem;
   color: #888;
 }
+
+.crm-lead-card-content {
+  padding: 14px 18px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crm-lead-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.crm-lead-card-row:last-child {
+  border-bottom: none;
+}
+
+.crm-lead-card-label {
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.crm-lead-card-value {
+  color: #17404e;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.crm-lead-card-contact {
+  color: #1abc9c;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
 .crm-lead-card-tasks {
   color: #f7b731;
   font-size: 0.95rem;
   margin-left: 8px;
+}
+
+.crm-lead-card-progress {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 8px 0;
+  justify-content: center;
+}
+
+.crm-lead-card-progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e9ecef;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.crm-lead-card-progress-dot:hover {
+  background: #1abc9c;
+  transform: scale(1.3);
+  box-shadow: 0 3px 8px rgba(26, 188, 156, 0.4);
+  border-color: #16a085;
+}
+
+.crm-lead-card-progress-dot-active {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  box-shadow: 0 2px 6px rgba(26, 188, 156, 0.4);
+  transform: scale(1.2);
+  border-color: #16a085;
+}
+
+.crm-lead-card-progress-dot-active:hover {
+  transform: scale(1.4);
+  box-shadow: 0 4px 12px rgba(26, 188, 156, 0.6);
+}
+
+.crm-lead-card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 0 8px 0;
+  border-top: 1px solid #f8f9fa;
+  margin-top: 8px;
+}
+
+.crm-lead-card-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.crm-lead-card-action:hover {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
 }
 
 @media (max-width: 900px) {

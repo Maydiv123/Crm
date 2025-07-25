@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PipelineProvider } from './context/PipelineContext';
 import Interface from './Components/Interface';
 import Dashboard from './Components/Dashboard';
 import Calendar from './Components/Calendar';
@@ -198,9 +199,11 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppLayout />
-      </Router>
+      <PipelineProvider>
+        <Router>
+          <AppLayout />
+        </Router>
+      </PipelineProvider>
     </AuthProvider>
   );
 }

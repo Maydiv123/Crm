@@ -192,6 +192,11 @@ router.post('/', auth, [
 
 // PUT /api/leads/:id - Update a lead
 router.put('/:id', auth, async (req, res) => {
+  console.log('PUT /api/leads/:id - Request received');
+  console.log('Lead ID:', req.params.id);
+  console.log('Request body:', req.body);
+  console.log('User:', req.user);
+  
   try {
     const [leads] = await pool.execute(
       `SELECT * FROM leads WHERE id = ?`,
@@ -201,24 +206,72 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Lead not found' });
     }
     const lead = leads[0];
+    console.log('Current lead data:', lead);
+    
     if (lead.assigned_to !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
     // Only allow updating certain fields
     const fields = [
-      'name', 'amount', 'stage', 'pipeline', 'contact_name', 'contact_phone', 'contact_email', 'contact_position', 'company_name', 'company_address', 'status', 'source', 'priority', 'expected_close_date', 'last_contact_date'
+      'name', 'amount', 'stage', 'pipeline', 'contact_name', 'contact_phone', 'contact_email', 'contact_position', 'company_name', 'company_address', 'status', 'source', 'priority', 'expected_close_date', 'last_contact_date', 'assigned_to'
     ];
+    
+    // Handle field name mapping
+    const fieldMapping = {
+      'contactName': 'contact_name',
+      'companyName': 'company_name',
+      'contactPhone': 'contact_phone',
+      'contactEmail': 'contact_email',
+      'contactPosition': 'contact_position',
+      'companyAddress': 'company_address',
+      'assignedTo': 'assigned_to'
+    };
     const updates = [];
     const params = [];
-    for (const field of fields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = ?`);
-        params.push(req.body[field]);
+    
+    // Process each field in the request body
+    for (const [frontendField, value] of Object.entries(req.body)) {
+      console.log(`Processing field: ${frontendField} = "${value}"`);
+      
+      // Map frontend field name to backend field name
+      const backendField = fieldMapping[frontendField] || frontendField;
+      console.log(`Mapped to backend field: ${backendField}`);
+      
+      // Check if this field is allowed to be updated
+      if (fields.includes(backendField) && value !== undefined) {
+        console.log(`Field ${backendField} is allowed and has value`);
+        
+        // Check if the value is actually different from the current value
+        const currentValue = lead[backendField];
+        console.log(`Current value: "${currentValue}", New value: "${value}"`);
+        
+        // Handle null/undefined current values properly
+        const normalizedCurrentValue = currentValue === null || currentValue === undefined ? '' : String(currentValue);
+        const normalizedNewValue = value === null || value === undefined ? '' : String(value);
+        
+        if (normalizedCurrentValue !== normalizedNewValue) {
+          console.log(`Values are different, adding to updates`);
+          updates.push(`${backendField} = ?`);
+          params.push(value);
+        } else {
+          console.log(`Field ${backendField} unchanged: "${currentValue}" -> "${value}"`);
+        }
+      } else {
+        console.log(`Field ${backendField} not allowed or has no value. Allowed: ${fields.includes(backendField)}, Value: ${value}`);
       }
     }
     if (updates.length === 0) {
-      return res.status(400).json({ message: 'No fields to update' });
+      console.log('No valid fields to update. Received:', req.body);
+      console.log('Allowed fields:', fields);
+      console.log('Current lead values:', lead);
+      return res.status(400).json({ 
+        message: 'No changes detected - all values are the same',
+        received: req.body,
+        allowedFields: fields,
+        currentValues: lead
+      });
     }
+    console.log('Updating lead with:', { updates, params, leadId: req.params.id });
     params.push(req.params.id);
     await pool.execute(
       `UPDATE leads SET ${updates.join(', ')} WHERE id = ?`,

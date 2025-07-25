@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { FaCheck, FaTrash } from "react-icons/fa";
 import "./Automate.css";
-import api from '../services/api';
+import { pipelineAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { usePipeline } from '../context/PipelineContext';
 
 const defaultColumns = [
   { key: "initialContact", label: "Initial Contact", hint: null, isDefault: true },
   { key: "discussions", label: "Discussions", hint: "Add hints", isDefault: true },
   { key: "decisionMaking", label: "Decision Making", hint: "Add hints", isDefault: true },
   { key: "contractDiscussion", label: "Contract Discussion", hint: "Add hints", isDefault: true },
-  { key: "closedWon", label: "Deal - won", hint: null, isDefault: true },
-  { key: "closedLost", label: "Deal - lost", hint: null, isDefault: true },
+  { key: "dealWon", label: "Deal Won", hint: null, isDefault: true },
+  { key: "dealLost", label: "Deal Lost", hint: null, isDefault: true },
 ];
 
 function HintsModal({ stage, hints, onChange, onClose, onSave }) {
@@ -51,15 +52,17 @@ export default function Automate({ onBack }) {
   const [hintsModalIdx, setHintsModalIdx] = useState(null);
   const [hintsDraft, setHintsDraft] = useState({ beginner: "", intermediate: "", expert: "" });
   const navigate = useNavigate();
+  
+  // Use global pipeline context
+  const { getCurrentPipelineStages } = usePipeline();
 
-  // Fetch pipeline config from backend on mount
+  // Sync with global pipeline context on mount and when stages change
   useEffect(() => {
-    api.get('/pipeline').then(res => {
-      if (res.data && res.data.columns && res.data.columns.length > 0) {
-        setColumns(res.data.columns);
-      }
-    });
-  }, []);
+    const currentStages = getCurrentPipelineStages();
+    if (currentStages.length > 0) {
+      setColumns(currentStages);
+    }
+  }, [getCurrentPipelineStages]);
 
   const handlePlusClick = (idx) => {
     // Insert a new column after idx, set it to edit mode
@@ -144,9 +147,21 @@ export default function Automate({ onBack }) {
   };
 
   const handleSave = async () => {
-    await api.post('/pipeline', { columns });
-    alert('Pipeline saved!');
+    try {
+      await pipelineAPI.save(columns);
+      alert('Pipeline saved!');
+      // Refresh the pipeline data after saving
+      const pipelineRes = await pipelineAPI.get();
+      if (pipelineRes.data && pipelineRes.data.columns) {
+        setColumns(pipelineRes.data.columns);
+      }
+    } catch (error) {
+      console.error('Error saving pipeline:', error);
+      alert('Failed to save pipeline');
+    }
   };
+
+
 
   return (
     <div className="automate-container">

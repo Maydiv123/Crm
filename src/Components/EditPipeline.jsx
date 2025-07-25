@@ -136,7 +136,7 @@ const colorClass = {
   deepteal: "editpipeline-stage-deepteal",
 };
 
-export default function EditPipeline({ onClose, pipelines, setPipelines, onSave }) {
+export default function EditPipeline({ onClose, pipelines, onSave }) {
   const [selectedTemplate, setSelectedTemplate] = useState(0);
   const [editingColorIdx, setEditingColorIdx] = useState(null);
   const [templateData, setTemplateData] = useState(templates);
