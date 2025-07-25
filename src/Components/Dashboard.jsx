@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaCog, FaEdit, FaPlus } from "react-icons/fa";
+import { FaCog, FaEdit, FaPlus, FaUsers } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaTrash } from "react-icons/fa";
 import "./Dashboard.css";
@@ -8,6 +8,7 @@ import axios from 'axios';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import EmployeeManagement from './EmployeeManagement';
 
 const widgetStyles = [
   { id: 1, color: '#222', bg: '#fff' },
@@ -74,6 +75,7 @@ export default function Dashboard() {
   const [isAdding, setIsAdding] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
+  const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', user: '', desc: '' });
   const [editEventIdx, setEditEventIdx] = useState(null);
@@ -119,6 +121,7 @@ export default function Dashboard() {
   };
 
   const menuOptions = [
+    'Employee Management',
     'Active leads',
     'Average reply time',
     'Pipeline Report',
@@ -252,6 +255,12 @@ export default function Dashboard() {
 
   const handleMenuSelect = (opt) => {
     setIsMenuOpen(false);
+    
+    if (opt === 'Employee Management') {
+      setShowEmployeeManagement(true);
+      return;
+    }
+    
     // Prevent duplicate cards by type
     if (cards.some(card => card.type === widgetTemplates[opt].type)) return;
     setCards(prev => [...prev, widgetTemplates[opt]]);
@@ -327,6 +336,9 @@ export default function Dashboard() {
         <div className="dashboard-email" style={{marginLeft: 16, fontWeight: 500, color: '#1abc9c'}}>{email}</div>
         <input className="dashboard-search" placeholder="Search" />
         <button className="dashboard-events-btn" onClick={() => setShowEvents(true)}>EVENTS</button>
+        <button className="dashboard-employees-btn" onClick={() => setShowEmployeeManagement(true)}>
+          <FaUsers /> EMPLOYEES
+        </button>
         <button className="dashboard-menu-btn" onClick={() => setIsMenuOpen((v) => !v)}><BsThreeDotsVertical /></button>
         {isMenuOpen && (
           <div className="dashboard-menu-dropdown">
@@ -452,6 +464,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        )}
+        
+        {showEmployeeManagement && (
+          <EmployeeManagement onClose={() => setShowEmployeeManagement(false)} />
         )}
       </div>
     </div>

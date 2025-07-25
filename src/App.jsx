@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PipelineProvider } from './context/PipelineContext';
@@ -30,7 +30,48 @@ import statsIcon from './assets/stats.png';
 import settingsIcon from './assets/setting.png';
 import { FiLogOut } from 'react-icons/fi';
 
-const sidebarItems = [
+// Component to redirect employees away from dashboard
+const EmployeeDashboardRedirect = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      navigate('/leads');
+    }
+  }, [user, navigate]);
+  
+  // Show dashboard only for admins
+  if (user && user.role === 'admin') {
+    return <Dashboard />;
+  }
+  
+  // Show loading while redirecting
+  return <div>Redirecting...</div>;
+};
+
+// Component to restrict access to admin-only routes
+const AdminOnlyRoute = ({ children }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      navigate('/leads');
+    }
+  }, [user, navigate]);
+  
+  // Show content only for admins
+  if (user && user.role === 'admin') {
+    return children;
+  }
+  
+  // Show loading while redirecting
+  return <div>Access Denied. Redirecting...</div>;
+};
+
+// Admin sidebar items
+const adminSidebarItems = [
   { icon: dashboardIcon, label: "Dashboard", path: "/dashboard" },
   { icon: leadsIcon, label: "Leads", path: "/leads" },
   { icon: whatsappIcon, label: "WhatsApp", path: "/whatsapp" },
@@ -41,6 +82,17 @@ const sidebarItems = [
   { icon: settingsIcon, label: "User Guide", path: "/user-guide" },
   { icon: settingsIcon, label: "Admin Panel", path: "/admin" },
   { icon: settingsIcon, label: "Company Dashboard", path: "/company" },
+];
+
+// Employee sidebar items (no dashboard, admin panel, or company dashboard)
+const employeeSidebarItems = [
+  { icon: leadsIcon, label: "Leads", path: "/leads" },
+  { icon: whatsappIcon, label: "WhatsApp", path: "/whatsapp" },
+  { icon: calendarIcon, label: "Calendar", path: "/calendar" },
+  { icon: listsIcon, label: "Invoice", path: "/lists" },
+  { icon: mailIcon, label: "Mail", path: "/mail" },
+  { icon: statsIcon, label: "Stats", path: "/stats" },
+  { icon: settingsIcon, label: "User Guide", path: "/user-guide" },
 ];
 
 // Protected Route Component
@@ -56,9 +108,12 @@ const ProtectedRoute = ({ children }) => {
 
 function AppLayout() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const currentPath = window.location.pathname;
   const isNoSidebar = ["/", "/login", "/signup"].includes(currentPath);
+  
+  // Choose sidebar items based on user role
+  const sidebarItems = user && user.role === 'admin' ? adminSidebarItems : employeeSidebarItems;
   
   const handleLogout = () => {
     logout();
@@ -73,7 +128,20 @@ function AppLayout() {
     <div style={{ display: 'flex', height: '100vh',  overflow: 'hidden'}}>
       {!isNoSidebar && (
         <aside className="crm-sidebar">
-          <div className="crm-logo">A</div>
+          <div className="crm-logo">
+            {user && user.role === 'admin' ? 'A' : 'E'}
+          </div>
+          {user && (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '10px', 
+              fontSize: '12px', 
+              color: user.role === 'admin' ? '#00b894' : '#74b9ff',
+              fontWeight: 'bold'
+            }}>
+              {user.role === 'admin' ? 'ADMIN' : 'EMPLOYEE'}
+            </div>
+          )}
           <nav>
             {sidebarItems.map((item) => (
               item.label === "WhatsApp" ? (
@@ -132,7 +200,7 @@ function AppLayout() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <Dashboard />
+              <EmployeeDashboardRedirect />
             </ProtectedRoute>
           } />
           <Route path="/leads" element={
@@ -182,12 +250,16 @@ function AppLayout() {
           } />
           <Route path="/admin" element={
             <ProtectedRoute>
-              <AdminDashboard />
+              <AdminOnlyRoute>
+                <AdminDashboard />
+              </AdminOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/company" element={
             <ProtectedRoute>
-              <CompanyDashboard />
+              <AdminOnlyRoute>
+                <CompanyDashboard />
+              </AdminOnlyRoute>
             </ProtectedRoute>
           } />
         </Routes>

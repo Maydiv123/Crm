@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'user', 'manager') DEFAULT 'user',
+  role ENUM('admin', 'user', 'manager', 'employee') DEFAULT 'user',
   avatar VARCHAR(255) DEFAULT '',
   isActive BOOLEAN DEFAULT TRUE,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

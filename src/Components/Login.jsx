@@ -16,7 +16,7 @@ const Login = () => {
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [userId, setUserId] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -25,25 +25,37 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    
+    // Validate inputs
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        // Save token and user info
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        navigate("/dashboard");
+      console.log('Attempting login with:', { email, password });
+      
+      // Use the login function from AuthContext
+      const result = await login({ email, password });
+      
+      if (result.success) {
+        console.log('Login successful, checking user role...');
+        
+        // Check user role and navigate accordingly
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user && user.role === 'admin') {
+          console.log('Admin user, navigating to dashboard');
+          navigate("/dashboard");
+        } else {
+          console.log('Employee user, navigating to leads');
+          navigate("/leads");
+        }
       } else {
-        setError(data.message || "Login failed");
+        setError(result.message || "Login failed");
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError("Login failed. Please try again later.");
     }
     setLoading(false);
@@ -62,18 +74,7 @@ const Login = () => {
         <form className="login-form" onSubmit={handleSubmit}>
           <h2 className="login-title">Sign In to C.R.M</h2>
           {error && <div className="login-error">{error}</div>}
-          <div className="login-input-group">
-            <img src={idIcon} alt="ID" className="login-input-svg" />
-            <input
-              type="text"
-              placeholder="ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="login-input"
-              required
-              disabled={loading}
-            />
-          </div>
+
           <div className="login-input-group">
             <img src={mailIcon} alt="Email" className="login-input-svg" />
             <input

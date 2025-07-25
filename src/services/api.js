@@ -59,6 +59,9 @@ export const usersAPI = {
   getById: (id) => api.get(`/users/${id}`),
   update: (id, userData) => api.put(`/users/${id}`, userData),
   delete: (id) => api.delete(`/users/${id}`),
+  // Employee management
+  getEmployees: () => api.get('/users/employees'),
+  createEmployee: (employeeData) => api.post('/users/employees', employeeData),
 };
 
 // Pipeline API
