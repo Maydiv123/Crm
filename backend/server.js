@@ -10,6 +10,7 @@ import tasksRoutes from './routes/tasks.js';
 import mailRoutes from './routes/mail.js';
 import activityLogRoutes from './routes/activityLogs.js';
 import adminRoutes from './routes/admin.js';
+import linkedinRoutes from './routes/linkedin.js';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/mail', mailRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/linkedin', linkedinRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

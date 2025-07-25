@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiUser, FiMail, FiCalendar, FiActivity, FiTrendingUp, FiShield } from 'react-icons/fi';
+import { FiX, FiUser, FiMail, FiCalendar, FiActivity, FiTrendingUp, FiShield, FiPackage } from 'react-icons/fi';
 import { adminAPI } from '../services/api';
 import './UserDetailsModal.css';
 
@@ -190,7 +190,17 @@ const UserDetailsModal = ({ userId, onClose }) => {
                     <div className="user-details-package-features">
                       <h5>Package Features:</h5>
                       <div className="user-details-features-list">
-                        {JSON.parse(userDetails.current_package.features).map((feature, index) => (
+                        {(function() {
+                          try {
+                            const features = typeof userDetails.current_package.features === 'string' 
+                              ? JSON.parse(userDetails.current_package.features) 
+                              : userDetails.current_package.features || [];
+                            return Array.isArray(features) ? features : [];
+                          } catch (error) {
+                            console.error('Error parsing package features:', error);
+                            return [];
+                          }
+                        })().map((feature, index) => (
                           <span key={index} className="user-details-feature">
                             ✓ {feature}
                           </span>

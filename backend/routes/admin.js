@@ -746,4 +746,286 @@ router.post('/unblock-user/:id', auth, requireAdmin, async (req, res) => {
   }
 });
 
+// Get expiry alerts
+router.get('/expiry-alerts', auth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        up.id,
+        u.id as user_id,
+        u.name as user_name,
+        u.email as user_email,
+        p.name as package_name,
+        up.end_date as expires_at,
+        DATEDIFF(up.end_date, CURDATE()) as days_remaining,
+        CASE 
+          WHEN DATEDIFF(up.end_date, CURDATE()) <= 7 THEN 'urgent'
+          WHEN DATEDIFF(up.end_date, CURDATE()) <= 14 THEN 'medium'
+          ELSE 'small'
+        END as priority
+      FROM user_packages up
+      JOIN users u ON up.user_id = u.id
+      JOIN packages p ON up.package_id = p.id
+      WHERE up.status = 'active' 
+        AND up.end_date IS NOT NULL
+        AND up.end_date > CURDATE()
+        AND up.end_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+      ORDER BY up.end_date ASC
+    `);
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching expiry alerts:', error);
+    res.status(500).json({ message: 'Error fetching expiry alerts' });
+  }
+});
+
+// Renew package for user
+router.post('/users/:id/renew-package', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { package_name, renewal_months = 12, amount } = req.body;
+
+    // Get package details
+    const [packageResult] = await pool.execute(
+      'SELECT id, name, price FROM packages WHERE name = ?',
+      [package_name]
+    );
+
+    if (packageResult.length === 0) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+
+    const packageId = packageResult[0].id;
+
+    // Get current user package
+    const [currentPackageResult] = await pool.execute(
+      'SELECT * FROM user_packages WHERE user_id = ? AND status = "active" ORDER BY created_at DESC LIMIT 1',
+      [id]
+    );
+
+    if (currentPackageResult.length === 0) {
+      return res.status(404).json({ message: 'No active package found for user' });
+    }
+
+    const currentPackage = currentPackageResult[0];
+
+    // Calculate new expiry date
+    const currentExpiry = new Date(currentPackage.end_date || currentPackage.created_at);
+    const newExpiry = new Date(currentExpiry);
+    newExpiry.setMonth(newExpiry.getMonth() + renewal_months);
+
+    // Update the existing package record
+    await pool.execute(
+      'UPDATE user_packages SET end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [newExpiry, currentPackage.id]
+    );
+
+    // Create payment record
+    await pool.execute(
+      'INSERT INTO payments (user_id, package_id, amount, status, payment_method, transaction_id) VALUES (?, ?, ?, "completed", "admin_renewal", ?)',
+      [id, packageId, amount, `RENEW_${Date.now()}`]
+    );
+
+    // Log the activity
+    await pool.execute(
+      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, "PACKAGE_RENEWED", ?, ?)',
+      [req.user.id, `Renewed ${package_name} package for user ID ${id}`, req.ip]
+    );
+
+    res.json({ 
+      message: 'Package renewed successfully',
+      new_expiry_date: newExpiry,
+      renewal_months: renewal_months,
+      amount: amount
+    });
+
+  } catch (error) {
+    console.error('Error renewing package:', error);
+    res.status(500).json({ message: 'Error renewing package' });
+  }
+});
+
+// Get company messages
+router.get('/messages', auth, requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        m.id,
+        u.name as user_name,
+        u.email as user_email,
+        m.recipient,
+        m.subject,
+        m.content,
+        m.type,
+        m.status,
+        m.created_at,
+        CASE 
+          WHEN m.type = 'email' THEN 1
+          WHEN m.type = 'sms' THEN 1
+          WHEN m.type = 'whatsapp' THEN 1
+          ELSE 1
+        END as message_count
+      FROM messages m
+      LEFT JOIN users u ON m.user_id = u.id
+      ORDER BY m.created_at DESC
+      LIMIT 50
+    `);
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ message: 'Error fetching messages' });
+  }
+});
+
+// Send new message
+router.post('/messages', auth, requireAdmin, async (req, res) => {
+  try {
+    const { recipient, subject, content, type, recipients_count = 1 } = req.body;
+
+    // Validate required fields
+    if (!recipient || !subject || !content || !type) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: recipient, subject, content, and type are required' 
+      });
+    }
+
+    // Validate message type
+    const validTypes = ['email', 'sms', 'whatsapp'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ 
+        message: 'Invalid message type. Must be email, sms, or whatsapp' 
+      });
+    }
+
+    // Validate recipient format based on type
+    if (type === 'email' && !recipient.includes('@')) {
+      return res.status(400).json({ 
+        message: 'Invalid email format for recipient' 
+      });
+    }
+
+    if (type === 'sms' && !recipient.match(/^\+?[\d\s\-\(\)]+$/)) {
+      return res.status(400).json({ 
+        message: 'Invalid phone number format for SMS recipient' 
+      });
+    }
+
+    if (type === 'whatsapp' && !recipient.includes('whatsapp://')) {
+      return res.status(400).json({ 
+        message: 'Invalid WhatsApp URL format. Must start with whatsapp://' 
+      });
+    }
+
+    // Create new message record
+    const [result] = await pool.execute(
+      'INSERT INTO messages (user_id, recipient, subject, content, type, status, created_at) VALUES (?, ?, ?, ?, ?, "sent", CURRENT_TIMESTAMP)',
+      [req.user.id, recipient, subject, content, type]
+    );
+
+    const messageId = result.insertId;
+
+    // Log the activity
+    await pool.execute(
+      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, "MESSAGE_SENT", ?, ?)',
+      [req.user.id, `Sent new ${type} message to ${recipient}: ${subject}`, req.ip]
+    );
+
+    res.status(201).json({ 
+      message: 'Message sent successfully',
+      message_id: messageId,
+      recipient: recipient,
+      type: type,
+      status: 'sent'
+    });
+
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ message: 'Error sending message' });
+  }
+});
+
+// Resend message
+router.post('/messages/:id/resend', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { recipient, subject, content, type } = req.body;
+
+    // Get original message details
+    const [messageResult] = await pool.execute(
+      'SELECT * FROM messages WHERE id = ?',
+      [id]
+    );
+
+    if (messageResult.length === 0) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    const originalMessage = messageResult[0];
+
+    // Create new message record (resend)
+    await pool.execute(
+      'INSERT INTO messages (user_id, recipient, subject, content, type, status, created_at) VALUES (?, ?, ?, ?, ?, "sent", CURRENT_TIMESTAMP)',
+      [req.user.id, recipient || originalMessage.recipient, subject || originalMessage.subject, content || originalMessage.content, type || originalMessage.type]
+    );
+
+    // Log the activity
+    await pool.execute(
+      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, "MESSAGE_RESENT", ?, ?)',
+      [req.user.id, `Resent message ID ${id} to ${recipient || originalMessage.recipient}`, req.ip]
+    );
+
+    res.json({ 
+      message: 'Message resent successfully',
+      original_message_id: id,
+      new_message_id: Date.now()
+    });
+
+  } catch (error) {
+    console.error('Error resending message:', error);
+    res.status(500).json({ message: 'Error resending message' });
+  }
+});
+
+// Delete message
+router.delete('/messages/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get message details before deletion
+    const [messageResult] = await pool.execute(
+      'SELECT * FROM messages WHERE id = ?',
+      [id]
+    );
+
+    if (messageResult.length === 0) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    const message = messageResult[0];
+
+    // Delete the message
+    await pool.execute(
+      'DELETE FROM messages WHERE id = ?',
+      [id]
+    );
+
+    // Log the activity
+    await pool.execute(
+      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, "MESSAGE_DELETED", ?, ?)',
+      [req.user.id, `Deleted message ID ${id} (${message.subject})`, req.ip]
+    );
+
+    res.json({ 
+      message: 'Message deleted successfully',
+      deleted_message_id: id
+    });
+
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ message: 'Error deleting message' });
+  }
+});
+
 export default router; 

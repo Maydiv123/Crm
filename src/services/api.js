@@ -105,6 +105,12 @@ export const adminAPI = {
   updateUserPermissions: (id, permissions) => api.put(`/admin/users/${id}/permissions`, { permissions }),
   getActivityLogs: () => api.get('/admin/activity-logs'),
   getMonthlyAnalytics: () => api.get('/admin/analytics/monthly'),
+  getExpiryAlerts: () => api.get('/admin/expiry-alerts'),
+  renewPackage: (userId, data) => api.post(`/admin/users/${userId}/renew-package`, data),
+  getMessages: () => api.get('/admin/messages'),
+  resendMessage: (messageId, data) => api.post(`/admin/messages/${messageId}/resend`, data),
+  deleteMessage: (messageId) => api.delete(`/admin/messages/${messageId}`),
+  sendMessage: (data) => api.post('/admin/messages', data),
 };
 
 // Company Dashboard APIs
@@ -144,6 +150,30 @@ export const companyAPI = {
   // Unblock user
   unblockUser: (userId) => 
     api.post(`/admin/unblock-user/${userId}`),
+
+  // Send message
+  sendMessage: (data) => 
+    api.post('/admin/send-message', data),
+
+  // Update employee
+  updateEmployee: (employeeId, data) => 
+    api.put(`/admin/employees/${employeeId}`, data),
+
+  // LinkedIn Integration APIs
+  getLinkedInStatus: () => 
+    api.get('/admin/linkedin/status'),
+  
+  connectLinkedIn: (authCode) => 
+    api.post('/admin/linkedin/connect', { authCode }),
+  
+  syncLinkedInLeads: () => 
+    api.post('/admin/linkedin/sync'),
+  
+  getLinkedInLeads: (params) => 
+    api.get('/admin/linkedin/leads', { params }),
+  
+  disconnectLinkedIn: () => 
+    api.delete('/admin/linkedin/disconnect'),
 };
 
 export default api; 

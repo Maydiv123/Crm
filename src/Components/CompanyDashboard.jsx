@@ -5,7 +5,8 @@ import {
   FiLock, FiUnlock, FiActivity, FiCalendar, FiBarChart2, FiPieChart,
   FiDownload, FiFilter, FiRefreshCw, FiAlertCircle, FiCheckCircle,
   FiSearch, FiEdit, FiTrash2, FiPlus, FiSettings, FiBell, FiUserPlus,
-  FiFileText, FiPrinter, FiShare2, FiMoreVertical, FiStar, FiAward
+  FiFileText, FiPrinter, FiShare2, FiMoreVertical, FiStar, FiAward,
+  FiLinkedin, FiClock, FiPause
 } from 'react-icons/fi';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -13,6 +14,7 @@ import {
   AreaChart, Area
 } from 'recharts';
 import { companyAPI } from '../services/api.js';
+import api from '../services/api.js';
 import './CompanyDashboard.css';
 
 const CompanyDashboard = () => {
@@ -48,6 +50,55 @@ const CompanyDashboard = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
+  
+  // New states for admin management
+  const [admins, setAdmins] = useState([]);
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [sendMessageLoading, setSendMessageLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState({
+    recipient: '',
+    subject: '',
+    content: '',
+    type: 'email',
+    recipients_count: 1
+  });
+  
+  // New states for employee management
+  const [showEmployeeDetailsModal, setShowEmployeeDetailsModal] = useState(false);
+  const [showEditEmployeeModal, setShowEditEmployeeModal] = useState(false);
+  const [editEmployeeLoading, setEditEmployeeLoading] = useState(false);
+  const [editEmployeeData, setEditEmployeeData] = useState({
+    name: '',
+    email: '',
+    role: '',
+    package: '',
+    packageExpiry: ''
+  });
+  
+  // LinkedIn Integration states
+  const [linkedinStatus, setLinkedinStatus] = useState('disconnected');
+  const [linkedinLastSync, setLinkedinLastSync] = useState(null);
+  const [linkedinTotalLeads, setLinkedinTotalLeads] = useState(0);
+  const [linkedinLoading, setLinkedinLoading] = useState(false);
+  
+  // LinkedIn Feature Modals
+  const [showRealTimeModal, setShowRealTimeModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showOutreachModal, setShowOutreachModal] = useState(false);
+  const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
+  const [realTimeData, setRealTimeData] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState({});
+  const [outreachCampaigns, setOutreachCampaigns] = useState([]);
+  const [newCampaign, setNewCampaign] = useState({
+    name: '',
+    template: '',
+    recipients: 0,
+    industry: '',
+    schedule: 'immediate'
+  });
+  const [createCampaignLoading, setCreateCampaignLoading] = useState(false);
 
   // Mock data for charts
   const monthlyRevenue = [
@@ -96,9 +147,113 @@ const CompanyDashboard = () => {
     { id: 4, type: 'system', message: 'System backup completed successfully', time: '1 hour ago', read: true },
   ];
 
+  // Mock admin data
+  const mockAdmins = [
+    {
+      id: 1,
+      name: 'Rahul Sharma',
+      email: 'rahul@company.com',
+      role: 'Senior Admin',
+      status: 'active',
+      employees: [
+        {
+          id: 1,
+          name: 'Priya Patel',
+          email: 'priya@company.com',
+          role: 'Sales Executive',
+          package: 'Premium',
+          packageExpiry: '2025-08-15',
+          daysRemaining: 22,
+          status: 'active',
+          leads: 45,
+          revenue: 125000
+        },
+        {
+          id: 2,
+          name: 'Amit Kumar',
+          email: 'amit@company.com',
+          role: 'Marketing Manager',
+          package: 'Basic',
+          packageExpiry: '2025-07-30',
+          daysRemaining: 6,
+          status: 'active',
+          leads: 32,
+          revenue: 89000
+        },
+        {
+          id: 3,
+          name: 'Neha Singh',
+          email: 'neha@company.com',
+          role: 'Customer Support',
+          package: 'Enterprise',
+          packageExpiry: '2025-09-20',
+          daysRemaining: 58,
+          status: 'active',
+          leads: 28,
+          revenue: 76000
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Sneha Verma',
+      email: 'sneha@company.com',
+      role: 'Admin Manager',
+      status: 'active',
+      employees: [
+        {
+          id: 4,
+          name: 'Vikram Malhotra',
+          email: 'vikram@company.com',
+          role: 'Business Analyst',
+          package: 'Premium',
+          packageExpiry: '2025-07-25',
+          daysRemaining: 1,
+          status: 'active',
+          leads: 38,
+          revenue: 112000
+        },
+        {
+          id: 5,
+          name: 'Anjali Gupta',
+          email: 'anjali@company.com',
+          role: 'HR Executive',
+          package: 'Basic',
+          packageExpiry: '2025-08-10',
+          daysRemaining: 17,
+          status: 'active',
+          leads: 15,
+          revenue: 45000
+        }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Arjun Mehta',
+      email: 'arjun@company.com',
+      role: 'Junior Admin',
+      status: 'active',
+      employees: [
+        {
+          id: 6,
+          name: 'Kavya Reddy',
+          email: 'kavya@company.com',
+          role: 'Data Analyst',
+          package: 'Enterprise',
+          packageExpiry: '2025-07-28',
+          daysRemaining: 4,
+          status: 'active',
+          leads: 52,
+          revenue: 145000
+        }
+      ]
+    }
+  ];
+
   useEffect(() => {
     fetchDashboardData();
     setNotifications(mockNotifications);
+    setAdmins(mockAdmins); // Set mock admin data
   }, [dateRange]);
 
   // Close notifications when clicking outside
@@ -349,6 +504,334 @@ const CompanyDashboard = () => {
     setShowUserDetails(true);
   };
 
+  const handleSendMessageToEmployee = (admin, employee) => {
+    setSelectedAdmin(admin);
+    setSelectedEmployee(employee);
+    setNewMessage({
+      recipient: employee.email,
+      subject: '',
+      content: '',
+      type: 'email',
+      recipients_count: 1
+    });
+    setShowSendMessageModal(true);
+  };
+
+  const handleSendMessageConfirm = async () => {
+    if (!newMessage.recipient || !newMessage.subject || !newMessage.content) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    
+    try {
+      setSendMessageLoading(true);
+      
+      // Call API to send message
+      await companyAPI.sendMessage({
+        recipient: newMessage.recipient,
+        subject: newMessage.subject,
+        content: newMessage.content,
+        type: newMessage.type,
+        recipients_count: newMessage.recipients_count
+      });
+      
+      alert(`Message sent successfully to ${selectedEmployee?.name}!`);
+      
+      // Close modal and reset form
+      setShowSendMessageModal(false);
+      setNewMessage({
+        recipient: '',
+        subject: '',
+        content: '',
+        type: 'email',
+        recipients_count: 1
+      });
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSendMessageLoading(false);
+    }
+  };
+
+  const handleNewMessageChange = (field, value) => {
+    setNewMessage(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const getPriorityColor = (daysRemaining) => {
+    if (daysRemaining <= 7) return '#dc2626'; // Red - urgent
+    if (daysRemaining <= 14) return '#d97706'; // Orange - medium
+    return '#059669'; // Green - safe
+  };
+
+  const getPriorityText = (daysRemaining) => {
+    if (daysRemaining <= 7) return 'Urgent';
+    if (daysRemaining <= 14) return 'Medium';
+    return 'Safe';
+  };
+
+  const handleViewEmployee = (admin, employee) => {
+    setSelectedAdmin(admin);
+    setSelectedEmployee(employee);
+    setShowEmployeeDetailsModal(true);
+  };
+
+  const handleEditEmployee = (admin, employee) => {
+    setSelectedAdmin(admin);
+    setSelectedEmployee(employee);
+    setEditEmployeeData({
+      name: employee.name,
+      email: employee.email,
+      role: employee.role,
+      package: employee.package,
+      packageExpiry: employee.packageExpiry
+    });
+    setShowEditEmployeeModal(true);
+  };
+
+  const handleEditEmployeeConfirm = async () => {
+    if (!editEmployeeData.name || !editEmployeeData.email || !editEmployeeData.role) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    
+    try {
+      setEditEmployeeLoading(true);
+      
+      // Call API to update employee
+      await companyAPI.updateEmployee(selectedEmployee.id, editEmployeeData);
+      
+      alert(`Employee ${editEmployeeData.name} updated successfully!`);
+      
+      // Update the local state
+      setAdmins(prevAdmins => 
+        prevAdmins.map(admin => 
+          admin.id === selectedAdmin.id 
+            ? {
+                ...admin,
+                employees: admin.employees.map(emp => 
+                  emp.id === selectedEmployee.id 
+                    ? { ...emp, ...editEmployeeData }
+                    : emp
+                )
+              }
+            : admin
+        )
+      );
+      
+      // Close modal and reset form
+      setShowEditEmployeeModal(false);
+      setEditEmployeeData({
+        name: '',
+        email: '',
+        role: '',
+        package: '',
+        packageExpiry: ''
+      });
+      
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      alert('Failed to update employee. Please try again.');
+    } finally {
+      setEditEmployeeLoading(false);
+    }
+  };
+
+  const handleEditEmployeeChange = (field, value) => {
+    setEditEmployeeData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleLinkedInConnect = async () => {
+    try {
+      setLinkedinLoading(true);
+      
+      // For demo purposes - simulate LinkedIn connection
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setLinkedinStatus('connected');
+      setLinkedinLastSync(new Date().toLocaleString());
+      setLinkedinTotalLeads(1250);
+      
+      alert('LinkedIn Sales Navigator connected successfully! (Demo Mode)');
+      
+    } catch (error) {
+      console.error('Error connecting to LinkedIn:', error);
+      alert('Failed to connect to LinkedIn. Please try again.');
+    } finally {
+      setLinkedinLoading(false);
+    }
+  };
+
+  const handleLinkedInSync = async () => {
+    try {
+      setLinkedinLoading(true);
+      
+      // For demo purposes - simulate LinkedIn sync
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const newLeads = Math.floor(Math.random() * 50) + 10;
+      setLinkedinLastSync(new Date().toLocaleString());
+      setLinkedinTotalLeads(prev => prev + newLeads);
+      
+      alert(`LinkedIn data synced successfully! ${newLeads} new leads imported. (Demo Mode)`);
+      
+    } catch (error) {
+      console.error('Error syncing LinkedIn data:', error);
+      alert('Failed to sync LinkedIn data. Please try again.');
+    } finally {
+      setLinkedinLoading(false);
+    }
+  };
+
+  // LinkedIn Feature Handlers
+  const handleRealTimeTracking = () => {
+    // Mock real-time data
+    const mockData = [
+      { lead: 'John Smith', company: 'Tech Corp', action: 'Profile Viewed', time: '2 min ago', status: 'active' },
+      { lead: 'Sarah Johnson', company: 'Marketing Inc', action: 'Message Sent', time: '5 min ago', status: 'sent' },
+      { lead: 'Mike Wilson', company: 'Sales Pro', action: 'Connection Request', time: '8 min ago', status: 'pending' },
+      { lead: 'Lisa Brown', company: 'Business Solutions', action: 'Email Opened', time: '12 min ago', status: 'opened' },
+      { lead: 'David Lee', company: 'Innovation Labs', action: 'Meeting Scheduled', time: '15 min ago', status: 'scheduled' }
+    ];
+    setRealTimeData(mockData);
+    setShowRealTimeModal(true);
+  };
+
+  const handleAdvancedAnalytics = () => {
+    // Mock analytics data
+    const mockAnalytics = {
+      totalLeads: 1273,
+      conversionRate: 23.5,
+      avgResponseTime: '2.3 hours',
+      topIndustries: [
+        { industry: 'Technology', count: 456, conversion: 28.2 },
+        { industry: 'Healthcare', count: 234, conversion: 19.8 },
+        { industry: 'Finance', count: 189, conversion: 31.5 },
+        { industry: 'Education', count: 156, conversion: 15.2 },
+        { industry: 'Manufacturing', count: 138, conversion: 22.1 }
+      ],
+      leadQuality: {
+        excellent: 45,
+        good: 38,
+        average: 12,
+        poor: 5
+      },
+      monthlyTrends: [
+        { month: 'Jan', leads: 89, conversions: 21 },
+        { month: 'Feb', leads: 112, conversions: 28 },
+        { month: 'Mar', leads: 156, conversions: 37 },
+        { month: 'Apr', leads: 134, conversions: 32 },
+        { month: 'May', leads: 178, conversions: 42 },
+        { month: 'Jun', leads: 203, conversions: 48 }
+      ]
+    };
+    setAnalyticsData(mockAnalytics);
+    setShowAnalyticsModal(true);
+  };
+
+  const handleAutomatedOutreach = () => {
+    // Mock outreach campaigns
+    const mockCampaigns = [
+      {
+        id: 1,
+        name: 'Tech Industry Outreach',
+        status: 'active',
+        recipients: 234,
+        sent: 189,
+        opened: 156,
+        replied: 23,
+        scheduled: 12,
+        template: 'Hi {firstName}, I noticed your work at {company}...'
+      },
+      {
+        id: 2,
+        name: 'Healthcare Follow-up',
+        status: 'paused',
+        recipients: 156,
+        sent: 134,
+        opened: 98,
+        replied: 18,
+        scheduled: 8,
+        template: 'Hi {firstName}, following up on our previous conversation...'
+      },
+      {
+        id: 3,
+        name: 'Finance Decision Makers',
+        status: 'draft',
+        recipients: 89,
+        sent: 0,
+        opened: 0,
+        replied: 0,
+        scheduled: 0,
+        template: 'Hi {firstName}, I believe {company} could benefit from...'
+      }
+    ];
+    setOutreachCampaigns(mockCampaigns);
+    setShowOutreachModal(true);
+  };
+
+  const handleCreateCampaign = () => {
+    setShowCreateCampaignModal(true);
+  };
+
+  const handleNewCampaignChange = (field, value) => {
+    setNewCampaign(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCreateCampaignConfirm = async () => {
+    if (!newCampaign.name || !newCampaign.template) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setCreateCampaignLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const campaign = {
+        id: outreachCampaigns.length + 1,
+        name: newCampaign.name,
+        status: 'draft',
+        recipients: newCampaign.recipients,
+        sent: 0,
+        opened: 0,
+        replied: 0,
+        scheduled: 0,
+        template: newCampaign.template,
+        industry: newCampaign.industry,
+        schedule: newCampaign.schedule
+      };
+
+      setOutreachCampaigns(prev => [campaign, ...prev]);
+      setShowCreateCampaignModal(false);
+      setNewCampaign({
+        name: '',
+        template: '',
+        recipients: 0,
+        industry: '',
+        schedule: 'immediate'
+      });
+      
+      alert('Campaign created successfully!');
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      alert('Failed to create campaign. Please try again.');
+    } finally {
+      setCreateCampaignLoading(false);
+    }
+  };
+
   const filteredTeamData = teamPerformance.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || member.status === filterStatus;
@@ -504,6 +987,18 @@ const CompanyDashboard = () => {
           onClick={() => setActiveTab('payments')}
         >
           <FiPackage /> Payments
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'admin-management' ? 'active' : ''}`}
+          onClick={() => setActiveTab('admin-management')}
+        >
+          <FiShield /> Admin Management
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'linkedin-integration' ? 'active' : ''}`}
+          onClick={() => setActiveTab('linkedin-integration')}
+        >
+          <FiLinkedin /> LinkedIn Integration
         </button>
         <button 
           className={`tab-button ${activeTab === 'security' ? 'active' : ''}`}
@@ -867,6 +1362,216 @@ const CompanyDashboard = () => {
         </div>
       )}
 
+      {activeTab === 'admin-management' && (
+        <div className="admin-management-section">
+          <div className="section-header">
+            <h2>Admin Management</h2>
+            <p>Manage admins and their employees, packages, and communications</p>
+          </div>
+
+          <div className="admins-grid">
+            {admins.map((admin) => (
+              <div key={admin.id} className="admin-card">
+                <div className="admin-header">
+                  <div className="admin-info">
+                    <div className="admin-avatar">
+                      {admin.name.charAt(0)}
+                    </div>
+                    <div className="admin-details">
+                      <h3>{admin.name}</h3>
+                      <p>{admin.email}</p>
+                      <span className={`role-badge ${admin.role.toLowerCase().replace(' ', '-')}`}>
+                        {admin.role}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="admin-stats">
+                    <div className="stat-item">
+                      <span className="stat-label">Employees</span>
+                      <span className="stat-value">{admin.employees.length}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Total Revenue</span>
+                      <span className="stat-value">₹{admin.employees.reduce((sum, emp) => sum + emp.revenue, 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="employees-section">
+                  <h4>Employees Under {admin.name}</h4>
+                  <div className="employees-list">
+                    {admin.employees.map((employee) => (
+                      <div key={employee.id} className="employee-card">
+                        <div className="employee-info">
+                          <div className="employee-avatar">
+                            {employee.name.charAt(0)}
+                          </div>
+                          <div className="employee-details">
+                            <h5>{employee.name}</h5>
+                            <p>{employee.email}</p>
+                            <span className="role-badge">{employee.role}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="employee-package">
+                          <div className="package-info">
+                            <span className="package-name">{employee.package}</span>
+                            <span 
+                              className="package-expiry"
+                              style={{ color: getPriorityColor(employee.daysRemaining) }}
+                            >
+                              Expires: {employee.packageExpiry} ({employee.daysRemaining} days)
+                            </span>
+                            <span 
+                              className={`priority-badge ${getPriorityText(employee.daysRemaining).toLowerCase()}`}
+                              style={{ backgroundColor: getPriorityColor(employee.daysRemaining) + '20', color: getPriorityColor(employee.daysRemaining) }}
+                            >
+                              {getPriorityText(employee.daysRemaining)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="employee-performance">
+                          <div className="performance-item">
+                            <span>Leads:</span>
+                            <strong>{employee.leads}</strong>
+                          </div>
+                          <div className="performance-item">
+                            <span>Revenue:</span>
+                            <strong>₹{employee.revenue.toLocaleString()}</strong>
+                          </div>
+                        </div>
+
+                        <div className="employee-actions">
+                          <button 
+                            className="action-btn message"
+                            onClick={() => handleSendMessageToEmployee(admin, employee)}
+                            title="Send Message"
+                          >
+                            <FiMessageSquare /> Message
+                          </button>
+                          <button 
+                            className="action-btn view"
+                            onClick={() => handleViewEmployee(admin, employee)}
+                            title="View Details"
+                          >
+                            <FiEye /> View
+                          </button>
+                          <button 
+                            className="action-btn edit"
+                            onClick={() => handleEditEmployee(admin, employee)}
+                            title="Edit Employee"
+                          >
+                            <FiEdit /> Edit
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+             {activeTab === 'linkedin-integration' && (
+         <div className="linkedin-integration-section">
+           <div className="section-header">
+             <h2>LinkedIn Integration</h2>
+             <p>Connect your LinkedIn Sales Navigator account to access premium leads and insights.</p>
+           </div>
+           
+           <div className="integration-status">
+             <h3>LinkedIn Sales Navigator Status:</h3>
+             <div className="status-grid">
+               <div className="status-item">
+                 <strong>Connection Status:</strong>
+                 <span className={`status-badge ${linkedinStatus}`}>
+                   {linkedinStatus === 'connected' ? 'Connected' : 'Disconnected'}
+                 </span>
+               </div>
+               <div className="status-item">
+                 <strong>Last Sync:</strong>
+                 <span>{linkedinLastSync || 'Never'}</span>
+               </div>
+               <div className="status-item">
+                 <strong>Total Leads:</strong>
+                 <span>{linkedinTotalLeads.toLocaleString()}</span>
+               </div>
+             </div>
+           </div>
+           
+           <div className="integration-actions">
+             <button 
+               className={`btn-primary ${linkedinLoading ? 'loading' : ''}`}
+               onClick={() => handleLinkedInConnect()}
+               disabled={linkedinLoading}
+             >
+               {linkedinLoading ? (
+                 <>
+                   <FiRefreshCw className="spinning" /> Connecting...
+                 </>
+               ) : (
+                 <>
+                   <FiLinkedin /> Connect LinkedIn
+                 </>
+               )}
+             </button>
+             <button 
+               className="btn-secondary"
+               onClick={() => handleLinkedInSync()}
+               disabled={linkedinStatus !== 'connected' || linkedinLoading}
+             >
+               <FiRefreshCw /> Sync Now
+             </button>
+           </div>
+           
+           <div className="integration-features">
+             <h3>LinkedIn Sales Navigator Features:</h3>
+             <div className="features-grid">
+               <div className="feature-card">
+                 <div className="feature-icon">
+                   <FiUserCheck />
+                 </div>
+                 <h4>Premium Lead Access</h4>
+                 <p>Access to 500M+ LinkedIn profiles with advanced search filters</p>
+               </div>
+               <div className="feature-card clickable" onClick={handleRealTimeTracking}>
+                 <div className="feature-icon">
+                   <FiTrendingUp />
+                 </div>
+                 <h4>Real-time Tracking</h4>
+                 <p>Track lead engagement and conversion in real-time</p>
+                 <div className="feature-action">
+                   <span>Click to view live data</span>
+                 </div>
+               </div>
+               <div className="feature-card clickable" onClick={handleAdvancedAnalytics}>
+                 <div className="feature-icon">
+                   <FiBarChart2 />
+                 </div>
+                 <h4>Advanced Analytics</h4>
+                 <p>Detailed reporting on lead quality and conversion rates</p>
+                 <div className="feature-action">
+                   <span>Click to view reports</span>
+                 </div>
+               </div>
+               <div className="feature-card clickable" onClick={handleAutomatedOutreach}>
+                 <div className="feature-icon">
+                   <FiMail />
+                 </div>
+                 <h4>Automated Outreach</h4>
+                 <p>Automated messaging and follow-up sequences</p>
+                 <div className="feature-action">
+                   <span>Click to manage campaigns</span>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
       {activeTab === 'security' && (
         <div className="security-section">
           <div className="section-header">
@@ -1066,6 +1771,539 @@ const CompanyDashboard = () => {
                   Save Settings
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Message Modal */}
+      {showSendMessageModal && selectedEmployee && (
+        <div className="modal-overlay" onClick={() => setShowSendMessageModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Send Message to Employee</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowSendMessageModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="employee-info-modal">
+                <div className="employee-avatar">
+                  {selectedEmployee.name.charAt(0)}
+                </div>
+                <div>
+                  <h4>{selectedEmployee.name}</h4>
+                  <p>{selectedEmployee.email}</p>
+                  <span className="role-badge">{selectedEmployee.role}</span>
+                </div>
+              </div>
+              
+              <div className="send-message-form">
+                <div className="form-group">
+                  <label>Subject:</label>
+                  <input
+                    type="text"
+                    placeholder="Message subject"
+                    value={newMessage.subject}
+                    onChange={(e) => handleNewMessageChange('subject', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Message Content:</label>
+                  <textarea
+                    placeholder="Your message content here..."
+                    value={newMessage.content}
+                    onChange={(e) => handleNewMessageChange('content', e.target.value)}
+                    rows="5"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Message Type:</label>
+                  <select
+                    value={newMessage.type}
+                    onChange={(e) => handleNewMessageChange('type', e.target.value)}
+                    required
+                  >
+                    <option value="email">Email</option>
+                    <option value="sms">SMS</option>
+                    <option value="whatsapp">WhatsApp</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="btn-secondary"
+                onClick={() => setShowSendMessageModal(false)}
+                disabled={sendMessageLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleSendMessageConfirm}
+                disabled={sendMessageLoading}
+              >
+                {sendMessageLoading ? (
+                  <>
+                    <FiRefreshCw className="spinning" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    <FiMessageSquare /> Send Message
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Details Modal */}
+      {showEmployeeDetailsModal && selectedEmployee && (
+        <div className="modal-overlay" onClick={() => setShowEmployeeDetailsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Employee Details</h3>
+              <button onClick={() => setShowEmployeeDetailsModal(false)}>×</button>
+            </div>
+            <div className="modal-content">
+              <div className="employee-details-info">
+                <div className="employee-avatar-large">
+                  {selectedEmployee.name.charAt(0)}
+                </div>
+                <div>
+                  <h4>{selectedEmployee.name}</h4>
+                  <p>{selectedEmployee.email}</p>
+                  <span className="role-badge">{selectedEmployee.role}</span>
+                </div>
+              </div>
+              <div className="employee-details-package">
+                <h5>Package Details</h5>
+                <p>Package: <strong>{selectedEmployee.package}</strong></p>
+                <p>Expires: <strong>{selectedEmployee.packageExpiry}</strong></p>
+                <p>Days Remaining: <strong>{selectedEmployee.daysRemaining}</strong></p>
+                <span 
+                  className={`priority-badge ${getPriorityText(selectedEmployee.daysRemaining).toLowerCase()}`}
+                  style={{ backgroundColor: getPriorityColor(selectedEmployee.daysRemaining) + '20', color: getPriorityColor(selectedEmployee.daysRemaining) }}
+                >
+                  Priority: {getPriorityText(selectedEmployee.daysRemaining)}
+                </span>
+              </div>
+              <div className="employee-details-performance">
+                <h5>Performance</h5>
+                <p>Leads: <strong>{selectedEmployee.leads}</strong></p>
+                <p>Revenue: <strong>₹{selectedEmployee.revenue.toLocaleString()}</strong></p>
+              </div>
+              <div className="employee-actions">
+                <button 
+                  className="action-btn edit"
+                  onClick={() => handleEditEmployee(selectedAdmin, selectedEmployee)}
+                >
+                  <FiEdit /> Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {showEditEmployeeModal && selectedEmployee && (
+        <div className="modal-overlay" onClick={() => setShowEditEmployeeModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Edit Employee</h3>
+              <button onClick={() => setShowEditEmployeeModal(false)}>×</button>
+            </div>
+            <div className="modal-content">
+              <form onSubmit={(e) => { e.preventDefault(); handleEditEmployeeConfirm(); }}>
+                <div className="form-group">
+                  <label>Name:</label>
+                  <input
+                    type="text"
+                    value={editEmployeeData.name}
+                    onChange={(e) => handleEditEmployeeChange('name', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    value={editEmployeeData.email}
+                    onChange={(e) => handleEditEmployeeChange('email', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Role:</label>
+                  <select
+                    value={editEmployeeData.role}
+                    onChange={(e) => handleEditEmployeeChange('role', e.target.value)}
+                    required
+                  >
+                    <option value="Sales Executive">Sales Executive</option>
+                    <option value="Marketing Manager">Marketing Manager</option>
+                    <option value="Business Analyst">Business Analyst</option>
+                    <option value="HR Executive">HR Executive</option>
+                    <option value="Data Analyst">Data Analyst</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Package:</label>
+                  <select
+                    value={editEmployeeData.package}
+                    onChange={(e) => handleEditEmployeeChange('package', e.target.value)}
+                    required
+                  >
+                    <option value="Basic">Basic</option>
+                    <option value="Premium">Premium</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Package Expiry:</label>
+                  <input
+                    type="date"
+                    value={editEmployeeData.packageExpiry}
+                    onChange={(e) => handleEditEmployeeChange('packageExpiry', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="button" onClick={() => setShowEditEmployeeModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={editEmployeeLoading}>
+                    {editEmployeeLoading ? (
+                      <>
+                        <FiRefreshCw className="spinning" /> Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FiCheckCircle /> Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Tracking Modal */}
+      {showRealTimeModal && (
+        <div className="modal-overlay" onClick={() => setShowRealTimeModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Real-time Lead Tracking</h3>
+              <button onClick={() => setShowRealTimeModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="real-time-stats">
+                <div className="stat-card">
+                  <h4>Active Leads</h4>
+                  <span className="stat-number">1273</span>
+                </div>
+                <div className="stat-card">
+                  <h4>Engagement Rate</h4>
+                  <span className="stat-number">23.5%</span>
+                </div>
+                <div className="stat-card">
+                  <h4>Response Time</h4>
+                  <span className="stat-number">2.3h</span>
+                </div>
+              </div>
+              <div className="real-time-activity">
+                <h4>Live Activity Feed</h4>
+                <div className="activity-list">
+                  {realTimeData.map((activity, index) => (
+                    <div key={index} className="activity-item">
+                      <div className="activity-icon">
+                        {activity.status === 'active' && <FiTrendingUp />}
+                        {activity.status === 'sent' && <FiMail />}
+                        {activity.status === 'pending' && <FiClock />}
+                        {activity.status === 'opened' && <FiEye />}
+                        {activity.status === 'scheduled' && <FiCalendar />}
+                      </div>
+                      <div className="activity-content">
+                        <div className="activity-header">
+                          <strong>{activity.lead}</strong> at <strong>{activity.company}</strong>
+                        </div>
+                        <div className="activity-action">{activity.action}</div>
+                        <div className="activity-time">{activity.time}</div>
+                      </div>
+                      <div className={`activity-status ${activity.status}`}>
+                        {activity.status}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Analytics Modal */}
+      {showAnalyticsModal && (
+        <div className="modal-overlay" onClick={() => setShowAnalyticsModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Advanced Analytics Dashboard</h3>
+              <button onClick={() => setShowAnalyticsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="analytics-overview">
+                <div className="overview-card">
+                  <h4>Total Leads</h4>
+                  <span className="overview-number">{analyticsData.totalLeads?.toLocaleString()}</span>
+                </div>
+                <div className="overview-card">
+                  <h4>Conversion Rate</h4>
+                  <span className="overview-number">{analyticsData.conversionRate}%</span>
+                </div>
+                <div className="overview-card">
+                  <h4>Avg Response Time</h4>
+                  <span className="overview-number">{analyticsData.avgResponseTime}</span>
+                </div>
+              </div>
+              
+              <div className="analytics-charts">
+                <div className="chart-section">
+                  <h4>Top Industries</h4>
+                  <div className="industry-list">
+                    {analyticsData.topIndustries?.map((industry, index) => (
+                      <div key={index} className="industry-item">
+                        <div className="industry-info">
+                          <span className="industry-name">{industry.industry}</span>
+                          <span className="industry-count">{industry.count} leads</span>
+                        </div>
+                        <div className="industry-bar">
+                          <div 
+                            className="industry-progress" 
+                            style={{ width: `${(industry.count / 456) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="industry-conversion">{industry.conversion}% conversion</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="chart-section">
+                  <h4>Lead Quality Distribution</h4>
+                  <div className="quality-chart">
+                    <div className="quality-item">
+                      <span className="quality-label">Excellent</span>
+                      <div className="quality-bar">
+                        <div className="quality-progress excellent" style={{ width: `${analyticsData.leadQuality?.excellent}%` }}></div>
+                      </div>
+                      <span className="quality-percentage">{analyticsData.leadQuality?.excellent}%</span>
+                    </div>
+                    <div className="quality-item">
+                      <span className="quality-label">Good</span>
+                      <div className="quality-bar">
+                        <div className="quality-progress good" style={{ width: `${analyticsData.leadQuality?.good}%` }}></div>
+                      </div>
+                      <span className="quality-percentage">{analyticsData.leadQuality?.good}%</span>
+                    </div>
+                    <div className="quality-item">
+                      <span className="quality-label">Average</span>
+                      <div className="quality-bar">
+                        <div className="quality-progress average" style={{ width: `${analyticsData.leadQuality?.average}%` }}></div>
+                      </div>
+                      <span className="quality-percentage">{analyticsData.leadQuality?.average}%</span>
+                    </div>
+                    <div className="quality-item">
+                      <span className="quality-label">Poor</span>
+                      <div className="quality-bar">
+                        <div className="quality-progress poor" style={{ width: `${analyticsData.leadQuality?.poor}%` }}></div>
+                      </div>
+                      <span className="quality-percentage">{analyticsData.leadQuality?.poor}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Automated Outreach Modal */}
+      {showOutreachModal && (
+        <div className="modal-overlay" onClick={() => setShowOutreachModal(false)}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Automated Outreach Campaigns</h3>
+              <button onClick={() => setShowOutreachModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="campaigns-header">
+                <button className="btn-primary" onClick={handleCreateCampaign}>
+                  <FiPlus /> Create New Campaign
+                </button>
+              </div>
+              
+              <div className="campaigns-list">
+                {outreachCampaigns.map((campaign) => (
+                  <div key={campaign.id} className="campaign-card">
+                    <div className="campaign-header">
+                      <h4>{campaign.name}</h4>
+                      <span className={`campaign-status ${campaign.status}`}>
+                        {campaign.status}
+                      </span>
+                    </div>
+                    
+                    <div className="campaign-stats">
+                      <div className="stat-item">
+                        <span className="stat-label">Recipients</span>
+                        <span className="stat-value">{campaign.recipients}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Sent</span>
+                        <span className="stat-value">{campaign.sent}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Opened</span>
+                        <span className="stat-value">{campaign.opened}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Replied</span>
+                        <span className="stat-value">{campaign.replied}</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-label">Scheduled</span>
+                        <span className="stat-value">{campaign.scheduled}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="campaign-template">
+                      <h5>Message Template:</h5>
+                      <p>{campaign.template}</p>
+                    </div>
+                    
+                    <div className="campaign-actions">
+                      <button className="action-btn edit">
+                        <FiEdit /> Edit
+                      </button>
+                      <button className="action-btn pause">
+                        <FiPause /> Pause
+                      </button>
+                      <button className="action-btn delete">
+                        <FiTrash2 /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Campaign Modal */}
+      {showCreateCampaignModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateCampaignModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create New Campaign</h3>
+              <button onClick={() => setShowCreateCampaignModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); handleCreateCampaignConfirm(); }}>
+                <div className="form-group">
+                  <label>Campaign Name *</label>
+                  <input
+                    type="text"
+                    value={newCampaign.name}
+                    onChange={(e) => handleNewCampaignChange('name', e.target.value)}
+                    placeholder="e.g., Tech Industry Outreach"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Target Industry</label>
+                  <select
+                    value={newCampaign.industry}
+                    onChange={(e) => handleNewCampaignChange('industry', e.target.value)}
+                  >
+                    <option value="">Select Industry</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Education">Education</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Real Estate">Real Estate</option>
+                    <option value="Consulting">Consulting</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Estimated Recipients</label>
+                  <input
+                    type="number"
+                    value={newCampaign.recipients}
+                    onChange={(e) => handleNewCampaignChange('recipients', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Schedule</label>
+                  <select
+                    value={newCampaign.schedule}
+                    onChange={(e) => handleNewCampaignChange('schedule', e.target.value)}
+                  >
+                    <option value="immediate">Send Immediately</option>
+                    <option value="scheduled">Schedule for Later</option>
+                    <option value="drip">Drip Campaign</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Message Template *</label>
+                  <textarea
+                    value={newCampaign.template}
+                    onChange={(e) => handleNewCampaignChange('template', e.target.value)}
+                    placeholder="Hi {firstName}, I noticed your work at {company}..."
+                    rows="6"
+                    required
+                  />
+                  <div className="template-variables">
+                    <small>Available variables: {'{firstName}'}, {'{lastName}'}, {'{company}'}, {'{position}'}</small>
+                  </div>
+                </div>
+                
+                <div className="form-actions">
+                  <button type="button" onClick={() => setShowCreateCampaignModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={createCampaignLoading}>
+                    {createCampaignLoading ? (
+                      <>
+                        <FiRefreshCw className="spinning" /> Creating...
+                      </>
+                    ) : (
+                      <>
+                        <FiPlus /> Create Campaign
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

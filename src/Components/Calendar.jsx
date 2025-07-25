@@ -256,7 +256,7 @@ const Calendar = () => {
                       }}>
                         {d.getDate()}
                       </div>
-                    </div>
+                  </div>
                   );
                 })}
               </div>
@@ -347,7 +347,7 @@ const Calendar = () => {
                           <div style={{ fontWeight: '600', marginBottom: '1px' }}>
                             {task.title.length > 15 ? task.title.substring(0, 15) + '...' : task.title}
                           </div>
-                        </div>
+                          </div>
                       ))}
                       {dayTasks.length > 3 && (
                         <div style={{
