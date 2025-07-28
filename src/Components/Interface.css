@@ -217,18 +217,46 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 18px 12px 32px 12px;
+  padding: 18px 12px 12px 12px;
   border-top: 4px solid #1abc9c;
-  height: auto;
-  min-height: 0;
+  height: calc(100vh - 220px);
+  min-height: 400px;
   margin-bottom: 24px;
+  gap: 8px;
+  overflow: hidden;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  position: relative;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}
+
+
+
+
+
+/* Container for cards within pipeline stage */
+.crm-pipeline-stage-cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
   gap: 12px;
-  max-height: calc(100vh - 220px);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
+  padding-bottom: 20px;
+  min-height: 0;
+  height: calc(100vh - 320px);
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  position: relative;
 }
+
+
 .crm-pipeline-stage::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for cards container */
+.crm-pipeline-stage-cards::-webkit-scrollbar {
   display: none;
 }
 
@@ -1009,13 +1037,12 @@ html, body, #root {
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border: 1px solid #e8eaed;
   border-radius: 16px;
-  margin: 18px 0 0 0;
+  margin: 0 0 12px 0;
   padding: 0;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  min-width: 180px;
-  margin-bottom: 16px;
+  width: 100%;
   min-height: unset;
   height: auto;
   justify-content: flex-start;
@@ -1023,6 +1050,7 @@ html, body, #root {
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .crm-lead-card::before {
@@ -1056,13 +1084,12 @@ html, body, #root {
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border: 1px solid #e8eaed;
   border-radius: 16px;
-  margin: 18px 0 0 0;
+  margin: 0 0 12px 0;
   padding: 0;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  min-width: 180px;
-  margin-bottom: 16px;
+  width: 100%;
   min-height: unset;
   height: auto;
   justify-content: flex-start;
@@ -1070,6 +1097,7 @@ html, body, #root {
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .crm-lead-card-modern::before {

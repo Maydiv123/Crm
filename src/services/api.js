@@ -82,6 +82,11 @@ export const tasksAPI = {
   create: (taskData) => api.post('/tasks', taskData),
   update: (id, taskData) => api.put(`/tasks/${id}`, taskData),
   delete: (id) => api.delete(`/tasks/${id}`),
+  getAssignableUsers: () => api.get('/tasks/assignable-users'),
+  // New endpoints for calendar and task management
+  getCalendarTasks: (userId) => api.get(`/tasks/calendar/${userId}`),
+  updateStatus: (id, status) => api.put(`/tasks/${id}/status`, { status }),
+  getUserTasks: (userId) => api.get(`/tasks/user/${userId}`),
 };
 
 // Activity Logs API
@@ -90,6 +95,17 @@ export const activityLogsAPI = {
   getById: (id) => api.get(`/activity-logs/${id}`),
   create: (activityData) => api.post('/activity-logs', activityData),
   delete: (id) => api.delete(`/activity-logs/${id}`),
+};
+
+// Invoices API
+export const invoicesAPI = {
+  getAll: (params) => api.get('/invoices', { params }),
+  getById: (id) => api.get(`/invoices/${id}`),
+  create: (invoiceData) => api.post('/invoices', invoiceData),
+  update: (id, invoiceData) => api.put(`/invoices/${id}`, invoiceData),
+  delete: (id) => api.delete(`/invoices/${id}`),
+  markAsPaid: (id, paymentData) => api.patch(`/invoices/${id}/mark-paid`, paymentData),
+  getStats: () => api.get('/invoices/stats/overview'),
 };
 
 // Admin API

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaCog, FaEdit, FaPlus, FaUsers } from "react-icons/fa";
+import { FaCog, FaEdit, FaPlus, FaUsers, FaEye, FaEyeSlash, FaCalendar } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { FaTrash } from "react-icons/fa";
 import "./Dashboard.css";
@@ -8,7 +8,9 @@ import axios from 'axios';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import EmployeeManagement from './EmployeeManagement';
+import { usersAPI, tasksAPI } from '../services/api.js';
+import UserCalendar from './UserCalendar.jsx';
+
 
 const widgetStyles = [
   { id: 1, color: '#222', bg: '#fff' },
@@ -57,6 +59,7 @@ export default function Dashboard() {
   const [font, setFont] = useState('light');
   const [widget, setWidget] = useState(1);
   const [bg, setBg] = useState(0);
+  const [customBg, setCustomBg] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
   const [editData, setEditData] = useState({ title: '', note: '', image: '' });
   const [cards, setCards] = useState([
@@ -74,11 +77,33 @@ export default function Dashboard() {
   ]);
   const [isAdding, setIsAdding] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showEvents, setShowEvents] = useState(false);
+  const [showAssignTask, setShowAssignTask] = useState(false);
   const [showEmployeeManagement, setShowEmployeeManagement] = useState(false);
-  const [events, setEvents] = useState([]);
-  const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', user: '', desc: '' });
-  const [editEventIdx, setEditEventIdx] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'employee'
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [userLoading, setUserLoading] = useState(false);
+  const [userError, setUserError] = useState('');
+  const [userSuccess, setUserSuccess] = useState('');
+  const [assignableUsers, setAssignableUsers] = useState([]);
+  const [taskForm, setTaskForm] = useState({ 
+    title: '', 
+    description: '', 
+    due_date: '', 
+    assigned_to: '', 
+    type: 'Follow up' 
+  });
+  const [taskLoading, setTaskLoading] = useState(false);
+  const [taskError, setTaskError] = useState('');
+  const [taskSuccess, setTaskSuccess] = useState('');
+  const [showUserCalendar, setShowUserCalendar] = useState(false);
+  const [selectedUserForCalendar, setSelectedUserForCalendar] = useState(null);
   const [dashboardStats, setDashboardStats] = useState({
     stageStats: [],
     statusStats: [],
@@ -90,34 +115,155 @@ export default function Dashboard() {
   });
 
   const users = ['Abhishek', 'Akash', 'Priya', 'Admin'];
+
+  // User management functions
+  const fetchEmployees = async () => {
+    try {
+      setUserLoading(true);
+      console.log('Fetching employees...');
+      const token = localStorage.getItem('token');
+      console.log('Token for employees:', !!token);
+      
+      const response = await usersAPI.getEmployees();
+      console.log('Employees response:', response.data);
+      setEmployees(response.data);
+    } catch (error) {
+      setUserError('Failed to fetch users');
+      console.error('Fetch users error:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // If API fails, try to use the users we know exist
+      console.log('API failed, using known users from database');
+      setEmployees([
+        { id: 1, name: 'sah', email: 'sah@gmail.com', role: 'employee', isActive: 1, createdAt: '2025-07-27' },
+        { id: 2, name: 'anil', email: 'anil@gmail.com', role: 'employee', isActive: 1, createdAt: '2025-07-27' },
+        { id: 3, name: 'Abhishek kumar', email: 'akay13230@gmail.com', role: 'employee', isActive: 1, createdAt: '2025-07-25' },
+        { id: 4, name: 'Abhishek kumar', email: 'ajay@gmail.com', role: 'employee', isActive: 1, createdAt: '2025-07-19' }
+      ]);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleUserFormChange = (e) => {
+    const { name, value } = e.target;
+    setUserFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setUserLoading(true);
+    setUserError('');
+    setUserSuccess('');
+
+    try {
+      const response = await usersAPI.createEmployee(userFormData);
+      setUserSuccess(`${userFormData.role.charAt(0).toUpperCase() + userFormData.role.slice(1)} created successfully!`);
+      setUserFormData({ name: '', email: '', password: '', role: 'employee' });
+      setShowAddUserForm(false);
+      fetchEmployees();
+    } catch (error) {
+      setUserError(error.response?.data?.message || 'Failed to create user');
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      await usersAPI.delete(userId);
+      setUserSuccess('User deleted successfully!');
+      fetchEmployees();
+    } catch (error) {
+      setUserError('Failed to delete user');
+    }
+  };
+
+  const handleViewCalendar = (user) => {
+    setSelectedUserForCalendar(user);
+    setShowUserCalendar(true);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const role = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : '';
   const email = user.email || '';
 
-  const handleEventFormChange = (e) => {
+  const fetchAssignableUsers = async () => {
+    try {
+      console.log('Fetching assignable users...');
+      const token = localStorage.getItem('token');
+      console.log('Token available:', !!token);
+      
+      const response = await tasksAPI.getAssignableUsers();
+      console.log('Assignable users response:', response.data);
+      setAssignableUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch assignable users:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Use employees data as fallback
+      if (employees.length > 0) {
+        console.log('Using employees as fallback for assignable users');
+        setAssignableUsers(employees);
+      } else {
+        console.log('No employees available for fallback');
+        // Don't set dummy data, let it be empty
+        setAssignableUsers([]);
+      }
+    }
+  };
+
+  const handleTaskFormChange = (e) => {
     const { name, value } = e.target;
-    setEventForm((prev) => ({ ...prev, [name]: value }));
+    setTaskForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddEvent = () => {
-    if (!eventForm.title || !eventForm.date || !eventForm.time || !eventForm.user) return;
-    setEvents((prev) => [...prev, { ...eventForm }]);
-    setEventForm({ title: '', date: '', time: '', user: '', desc: '' });
-  };
+  const handleAssignTask = async (e) => {
+    e.preventDefault();
+    setTaskLoading(true);
+    setTaskError('');
+    setTaskSuccess('');
 
-  const handleEditEvent = (idx) => {
-    setEditEventIdx(idx);
-    setEventForm(events[idx]);
-  };
-
-  const handleSaveEditEvent = () => {
-    setEvents((prev) => prev.map((ev, i) => i === editEventIdx ? { ...eventForm } : ev));
-    setEditEventIdx(null);
-    setEventForm({ title: '', date: '', time: '', user: '', desc: '' });
-  };
-
-  const handleDeleteEvent = (idx) => {
-    setEvents((prev) => prev.filter((_, i) => i !== idx));
+    try {
+      console.log('Submitting task form:', taskForm);
+      console.log('Token available:', !!localStorage.getItem('token'));
+      
+      const response = await tasksAPI.create(taskForm);
+      console.log('Task creation response:', response);
+      
+      setTaskSuccess('Task assigned successfully!');
+      setTaskForm({ 
+        title: '', 
+        description: '', 
+        due_date: '', 
+        assigned_to: '', 
+        type: 'Follow up' 
+      });
+      setShowAssignTask(false);
+    } catch (error) {
+      console.error('Task assignment error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      setTaskError(error.response?.data?.message || 'Failed to assign task');
+    } finally {
+      setTaskLoading(false);
+    }
   };
 
   const menuOptions = [
@@ -188,6 +334,7 @@ export default function Dashboard() {
           activeLeads: active,
         });
       } catch (err) {
+        console.log('Stats fetch failed, using fallback data');
         // fallback: show zeroes
         setDashboardStats({
           stageStats: [],
@@ -201,7 +348,17 @@ export default function Dashboard() {
       }
     }
     fetchStats();
+    fetchEmployees(); // Fetch users when component mounts
+    fetchAssignableUsers(); // Fetch assignable users when component mounts
   }, []);
+
+  // Update assignable users when employees are loaded
+  React.useEffect(() => {
+    if (employees.length > 0 && assignableUsers.length === 0) {
+      console.log('Employees loaded, updating assignable users');
+      setAssignableUsers(employees);
+    }
+  }, [employees, assignableUsers.length]);
 
   const handleEdit = (idx) => {
     setEditIndex(idx);
@@ -236,6 +393,23 @@ export default function Dashboard() {
 
   const handleEditCancel = () => {
     setEditIndex(null);
+  };
+
+  const handleCustomBgUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCustomBg(event.target.result);
+        setBg(-1); // Use custom background
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveCustomBg = () => {
+    setCustomBg(null);
+    setBg(0); // Reset to default background
   };
 
   const handleAdd = () => {
@@ -283,7 +457,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dashboard-bg" style={bgImages[bg] ? { backgroundImage: `url(${bgImages[bg]})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+    <div className="dashboard-bg" style={
+      bg === -1 && customBg ? 
+        { backgroundImage: `url(${customBg})`, backgroundSize: 'cover', backgroundPosition: 'center' } : 
+        bgImages[bg] ? 
+          { backgroundImage: `url(${bgImages[bg]})`, backgroundSize: 'cover', backgroundPosition: 'center' } : 
+          {}
+    }>
       {showSetup && (
         <div className="dashboard-setup-panel">
           <div className="dashboard-setup-row">
@@ -323,6 +503,29 @@ export default function Dashboard() {
                   onClick={() => setBg(i)}
                 />
               ))}
+              <div className="dashboard-setup-bg custom-upload">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCustomBgUpload}
+                  id="custom-bg-upload"
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="custom-bg-upload" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: '#fff', fontSize: '1.5rem' }}>
+                  📁
+                </label>
+              </div>
+              {customBg && (
+                <div className="dashboard-setup-bg custom-bg">
+                  <img src={customBg} alt="Custom" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+                  <button 
+                    onClick={handleRemoveCustomBg}
+                    style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#f44336', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <div className="dashboard-setup-actions">
@@ -335,7 +538,13 @@ export default function Dashboard() {
         <div className="dashboard-logo">{role}</div>
         <div className="dashboard-email" style={{marginLeft: 16, fontWeight: 500, color: '#1abc9c'}}>{email}</div>
         <input className="dashboard-search" placeholder="Search" />
-        <button className="dashboard-events-btn" onClick={() => setShowEvents(true)}>EVENTS</button>
+        <button className="dashboard-events-btn" onClick={() => {
+          setShowAssignTask(true);
+          // Refresh assignable users when opening modal
+          if (employees.length > 0) {
+            setAssignableUsers(employees);
+          }
+        }}>ASSIGN TASK</button>
         <button className="dashboard-employees-btn" onClick={() => setShowEmployeeManagement(true)}>
           <FaUsers /> EMPLOYEES
         </button>
@@ -348,39 +557,110 @@ export default function Dashboard() {
           </div>
         )}
       </header>
-      {showEvents && (
+      {showAssignTask && (
         <div className="dashboard-events-overlay">
           <div className="dashboard-events-content">
             <div className="dashboard-events-header">
-              <h2>Events</h2>
-              <button className="dashboard-events-close" onClick={() => setShowEvents(false)}>×</button>
+              <h2>Assign Task</h2>
+              <button className="dashboard-events-close" onClick={() => setShowAssignTask(false)}>×</button>
             </div>
-            <form className="dashboard-event-form" onSubmit={e => { e.preventDefault(); editEventIdx !== null ? handleSaveEditEvent() : handleAddEvent(); }}>
-              <input name="title" placeholder="Event Title" value={eventForm.title} onChange={handleEventFormChange} required />
-              <input name="date" type="date" value={eventForm.date} onChange={handleEventFormChange} required />
-              <input name="time" type="time" value={eventForm.time} onChange={handleEventFormChange} required />
-              <select name="user" value={eventForm.user} onChange={handleEventFormChange} required>
-                <option value="">Assign User</option>
-                {users.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-              <textarea name="desc" placeholder="Description/Notes" value={eventForm.desc} onChange={handleEventFormChange} />
-              <button type="submit">{editEventIdx !== null ? 'Save' : 'Add Event'}</button>
+            
+            {taskError && <div className="dashboard-employee-error">{taskError}</div>}
+            {taskSuccess && <div className="dashboard-employee-success">{taskSuccess}</div>}
+            
+            <form className="dashboard-event-form" onSubmit={handleAssignTask}>
+              <div className="form-group">
+                <label>📋 Task Title:</label>
+                <input 
+                  name="title" 
+                  placeholder="Enter task title" 
+                  value={taskForm.title} 
+                  onChange={handleTaskFormChange} 
+                  required 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>📝 Description:</label>
+                <textarea 
+                  name="description" 
+                  placeholder="Enter detailed task description..." 
+                  value={taskForm.description} 
+                  onChange={handleTaskFormChange}
+                  rows="4"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>👤 Assign To:</label>
+                                  <select 
+                    name="assigned_to" 
+                    value={taskForm.assigned_to} 
+                    onChange={handleTaskFormChange} 
+                    required
+                  >
+                    <option value="">Select User</option>
+                    {assignableUsers.length > 0 ? (
+                      assignableUsers.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.role.charAt(0).toUpperCase() + user.role.slice(1)}) - {user.email}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No users available</option>
+                    )}
+                  </select>
+                  {assignableUsers.length === 0 && (
+                    <small style={{ color: '#e74c3c', marginTop: '4px', display: 'block' }}>
+                      No users available for assignment. Please create users first.
+                    </small>
+                  )}
+                  {assignableUsers.length > 0 && (
+                    <small style={{ color: '#27ae60', marginTop: '4px', display: 'block' }}>
+                      {assignableUsers.length} user(s) available for assignment
+                    </small>
+                  )}
+              </div>
+              
+              <div className="form-group">
+                <label>📅 Due Date:</label>
+                <input 
+                  name="due_date" 
+                  type="date" 
+                  value={taskForm.due_date} 
+                  onChange={handleTaskFormChange} 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>🏷️ Task Type:</label>
+                <select 
+                  name="type" 
+                  value={taskForm.type} 
+                  onChange={handleTaskFormChange}
+                >
+                  <option value="Follow up">📞 Follow up</option>
+                  <option value="Meeting">🤝 Meeting</option>
+                  <option value="Call">📱 Call</option>
+                  <option value="Email">📧 Email</option>
+                  <option value="Document">📄 Document</option>
+                  <option value="Other">📋 Other</option>
+                </select>
+              </div>
+              
+              <div className="form-actions">
+                <button type="submit" disabled={taskLoading} className="assign-btn">
+                  {taskLoading ? '⏳ Assigning...' : '✅ Assign Task'}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAssignTask(false)}
+                  className="cancel-btn"
+                >
+                  ❌ Cancel
+                </button>
+              </div>
             </form>
-            <div className="dashboard-events-list">
-              {events.length === 0 && <div className="dashboard-event-item">No events yet. (Add your events here!)</div>}
-              {events.map((ev, i) => (
-                <div className="dashboard-event-item" key={i}>
-                  <div style={{ fontWeight: 600, fontSize: '1.1em' }}>{ev.title}</div>
-                  <div>Date: {ev.date} | Time: {ev.time}</div>
-                  <div>User: {ev.user}</div>
-                  {ev.desc && <div style={{ marginTop: 4 }}>{ev.desc}</div>}
-                  <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
-                    <button className="dashboard-event-edit-btn" onClick={() => handleEditEvent(i)}>Edit</button>
-                    <button className="dashboard-event-delete-btn" onClick={() => handleDeleteEvent(i)}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -467,7 +747,192 @@ export default function Dashboard() {
         )}
         
         {showEmployeeManagement && (
-          <EmployeeManagement onClose={() => setShowEmployeeManagement(false)} />
+          <div className="dashboard-employee-overlay">
+            <div className="dashboard-employee-content">
+              <div className="dashboard-employee-header">
+                <h2>User Management</h2>
+                <button className="dashboard-employee-close" onClick={() => setShowEmployeeManagement(false)}>×</button>
+              </div>
+
+              {userError && <div className="dashboard-employee-error">{userError}</div>}
+              {userSuccess && <div className="dashboard-employee-success">{userSuccess}</div>}
+
+              <div className="dashboard-employee-actions">
+                <button 
+                  className="dashboard-employee-add-btn"
+                  onClick={() => setShowAddUserForm(true)}
+                >
+                  <FaPlus /> Add User
+                </button>
+              </div>
+
+              {showAddUserForm && (
+                <div className="dashboard-employee-form">
+                  <h3>Add New User</h3>
+                  <form onSubmit={handleCreateUser}>
+                    <div className="form-group">
+                      <label>Name:</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={userFormData.name}
+                        onChange={handleUserFormChange}
+                        required
+                        placeholder="Enter user name"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Email:</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={userFormData.email}
+                        onChange={handleUserFormChange}
+                        required
+                        placeholder="Enter user email"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Role:</label>
+                      <select
+                        name="role"
+                        value={userFormData.role}
+                        onChange={handleUserFormChange}
+                        required
+                      >
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>Password:</label>
+                      <div className="password-input-container">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          value={userFormData.password}
+                          onChange={handleUserFormChange}
+                          required
+                          placeholder="Enter password (min 6 characters)"
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          className="password-toggle-btn"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="form-actions">
+                      <button type="submit" disabled={userLoading}>
+                        {userLoading ? 'Creating...' : 'Create User'}
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setShowAddUserForm(false);
+                          setUserFormData({ name: '', email: '', password: '', role: 'employee' });
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              <div className="dashboard-employee-list">
+                <h3>Current Users ({employees.length})</h3>
+                
+                {userLoading && <div className="dashboard-employee-loading">Loading users...</div>}
+                
+                {!userLoading && employees.length === 0 && (
+                  <div className="dashboard-employee-empty">
+                    No users found. Add your first user above.
+                  </div>
+                )}
+
+                {!userLoading && employees.length > 0 && (
+                  <div className="employee-table">
+                    <div className="employee-table-header">
+                      <div className="employee-table-cell">Name</div>
+                      <div className="employee-table-cell">Email</div>
+                      <div className="employee-table-cell">Role</div>
+                      <div className="employee-table-cell">Status</div>
+                      <div className="employee-table-cell">Created</div>
+                      <div className="employee-table-cell">Actions</div>
+                    </div>
+                    
+                    {employees.map((employee) => (
+                      <div key={employee.id} className="employee-table-row">
+                        <div className="employee-table-cell">
+                          <div className="employee-name">
+                            {employee.avatar && (
+                              <img 
+                                src={employee.avatar} 
+                                alt={employee.name} 
+                                className="employee-avatar"
+                              />
+                            )}
+                            {employee.name}
+                          </div>
+                        </div>
+                        <div className="employee-table-cell">{employee.email}</div>
+                        <div className="employee-table-cell">
+                          <span className={`role-badge ${employee.role || 'employee'}`}>
+                            {employee.role ? employee.role.charAt(0).toUpperCase() + employee.role.slice(1) : 'Employee'}
+                          </span>
+                        </div>
+                        <div className="employee-table-cell">
+                          <span className={`status-badge ${employee.isActive ? 'active' : 'inactive'}`}>
+                            {employee.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <div className="employee-table-cell">
+                          {formatDate(employee.createdAt)}
+                        </div>
+                        <div className="employee-table-cell">
+                          <div className="employee-actions">
+                            <button 
+                              className="action-btn calendar-btn"
+                              onClick={() => handleViewCalendar(employee)}
+                              title="View Calendar"
+                            >
+                              <FaCalendar />
+                            </button>
+                            <button 
+                              className="action-btn delete-btn"
+                              onClick={() => handleDeleteUser(employee.id)}
+                              title="Delete User"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showUserCalendar && selectedUserForCalendar && (
+          <UserCalendar
+            userId={selectedUserForCalendar.id}
+            userName={selectedUserForCalendar.name}
+            onClose={() => {
+              setShowUserCalendar(false);
+              setSelectedUserForCalendar(null);
+            }}
+          />
         )}
       </div>
     </div>

@@ -3013,6 +3013,7 @@
   background: white;
   cursor: pointer;
   transition: border-color 0.2s ease;
+  color: black;
 }
 
 .form-group select:focus {

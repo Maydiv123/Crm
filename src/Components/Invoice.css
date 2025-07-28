@@ -316,6 +316,7 @@
   padding: 12px 16px;
   border-bottom: 1px solid #eee;
   font-size: 14px;
+  color: #333;
 }
 
 .invoice-table tr:hover {
@@ -429,7 +430,7 @@
 }
 
 .invoice-form-modal {
-  background: rgba(255,255,255,0.95);
+  background: white;
   border-radius: 22px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.18), 0 1.5px 8px rgba(36, 174, 144, 0.08);
   max-width: 820px;
@@ -439,6 +440,7 @@
   animation: popin 0.4s cubic-bezier(.4,2,.6,1) 1;
   max-height: 90vh;
   overflow-y: auto;
+  color: black;
 }
 
 @keyframes popin {
@@ -549,6 +551,7 @@
   max-height: 90vh;
   overflow-y: auto;
   background-color: white;
+  color: black;
 }
 
 .invoice-modal-header {
@@ -677,6 +680,7 @@
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;
+  background-color: white;
 }
 
 .invoice-search input:focus {

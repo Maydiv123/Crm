@@ -146,6 +146,24 @@
   box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
 }
 
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0f7fa;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  background: white;
+  cursor: pointer;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #1abc9c;
+  box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+}
+
 .password-input-container {
   position: relative;
 }
@@ -246,7 +264,7 @@
 
 .employee-table-header {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 2fr 1fr 1fr 1fr 1fr;
   background: #f8f9fa;
   font-weight: 600;
   color: #333;
@@ -255,7 +273,7 @@
 
 .employee-table-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 2fr 1fr 1fr 1fr 1fr;
   border-bottom: 1px solid #e0f7fa;
   transition: background-color 0.2s;
 }
@@ -309,6 +327,24 @@
 .status-badge.inactive {
   background: #ffebee;
   color: #c62828;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-badge.employee {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.role-badge.manager {
+  background: #fff3e0;
+  color: #f57c00;
 }
 
 .employee-actions {

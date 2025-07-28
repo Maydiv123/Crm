@@ -11,6 +11,7 @@ import mailRoutes from './routes/mail.js';
 import activityLogRoutes from './routes/activityLogs.js';
 import adminRoutes from './routes/admin.js';
 import linkedinRoutes from './routes/linkedin.js';
+import invoiceRoutes from './routes/invoices.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use('/api/mail', mailRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/linkedin', linkedinRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

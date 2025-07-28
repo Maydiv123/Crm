@@ -19,11 +19,11 @@ router.get('/', adminAuth, async (req, res) => {
   }
 });
 
-// GET /api/users/employees - Get all employees (admin only)
+// GET /api/users/employees - Get all employees and managers (admin only)
 router.get('/employees', adminAuth, async (req, res) => {
   try {
     const [employees] = await pool.execute(
-      'SELECT id, name, email, role, avatar, isActive, createdAt FROM users WHERE role = "employee" ORDER BY createdAt DESC'
+      'SELECT id, name, email, role, avatar, isActive, createdAt FROM users WHERE role IN ("employee", "manager") ORDER BY createdAt DESC'
     );
     res.json(employees);
   } catch (error) {
@@ -32,11 +32,12 @@ router.get('/employees', adminAuth, async (req, res) => {
   }
 });
 
-// POST /api/users/employees - Create new employee (admin only)
+// POST /api/users/employees - Create new employee or manager (admin only)
 router.post('/employees', adminAuth, [
   body('name', 'Name is required').not().isEmpty(),
   body('email', 'Please include a valid email').isEmail(),
-  body('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 })
+  body('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+  body('role', 'Role must be either employee or manager').isIn(['employee', 'manager'])
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -44,7 +45,7 @@ router.post('/employees', adminAuth, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Check if user already exists
     const [existingUsers] = await pool.execute(
@@ -53,31 +54,31 @@ router.post('/employees', adminAuth, [
     );
 
     if (existingUsers.length > 0) {
-      return res.status(400).json({ message: 'Employee with this email already exists' });
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new employee
+    // Create new user with specified role
     const [result] = await pool.execute(
       'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [name, email, hashedPassword, 'employee']
+      [name, email, hashedPassword, role]
     );
 
-    // Get the created employee
-    const [employees] = await pool.execute(
+    // Get the created user
+    const [users] = await pool.execute(
       'SELECT id, name, email, role, avatar, isActive, createdAt FROM users WHERE id = ?',
       [result.insertId]
     );
 
     res.status(201).json({
-      message: 'Employee created successfully',
-      employee: employees[0]
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} created successfully`,
+      user: users[0]
     });
   } catch (error) {
-    console.error('Create employee error:', error);
+    console.error('Create user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

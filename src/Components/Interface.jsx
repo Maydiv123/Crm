@@ -387,6 +387,55 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [leadModalPipelineIndex, setLeadModalPipelineIndex] = useState(0);
   const [activeDotIndex, setActiveDotIndex] = useState({}); // Track active dot for each lead
 
+  // Function to detect overflow and add scroll indicators
+  const checkPipelineOverflow = () => {
+    const pipelineStages = document.querySelectorAll('.crm-pipeline-stage');
+    pipelineStages.forEach((stage) => {
+      const cardsContainer = stage.querySelector('.crm-pipeline-stage-cards');
+      if (cardsContainer) {
+        const hasOverflow = cardsContainer.scrollHeight > cardsContainer.clientHeight;
+        if (hasOverflow) {
+          stage.classList.add('has-overflow');
+        } else {
+          stage.classList.remove('has-overflow');
+        }
+      }
+    });
+  };
+
+  // Check overflow on mount and when leads change
+  useEffect(() => {
+    // Check overflow after a short delay to ensure DOM is ready
+    const timer = setTimeout(checkPipelineOverflow, 100);
+    
+    // Add resize listener to check overflow when window resizes
+    const handleResize = () => {
+      setTimeout(checkPipelineOverflow, 100);
+    };
+    
+    // Add mutation observer to check overflow when DOM changes
+    const observer = new MutationObserver(() => {
+      setTimeout(checkPipelineOverflow, 50);
+    });
+    
+    const pipelineContainer = document.querySelector('.crm-pipeline');
+    if (pipelineContainer) {
+      observer.observe(pipelineContainer, { 
+        childList: true, 
+        subtree: true, 
+        attributes: true 
+      });
+    }
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
+  }, [leads, pipelines]);
+
   // Function to get data based on active dot
   const getDotData = (lead, dotIndex) => {
     const dotData = [
@@ -492,6 +541,8 @@ export default function Interface({ onSidebarNav, navigate }) {
         pipeline: pipelines[leadModalPipelineIndex].name // Use the modal's pipeline index
       });
       setLeads([...leads, response.data]);
+      // Check overflow after adding lead
+      setTimeout(checkPipelineOverflow, 100);
     } catch (error) {
       alert('Failed to add lead: ' + (error.response?.data?.message || error.message));
     }
@@ -1188,6 +1239,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                 </div>
               )}
               {/* Render leads for this stage */}
+              <div className="crm-pipeline-stage-cards">
               {leads.filter(lead => {
                 const leadStage = (lead.stage || '').toLowerCase();
                 const pipelineStage = (stage || '').toLowerCase();
@@ -1345,6 +1397,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                   </div>
                 </div>
               ))}
+              </div>
               {/* Sample lead card in each stage */}
               {/* This section is now redundant as leads are rendered directly */}
               {/* {stage === 'Initial Contact' && leadStage === 'Initial contact' && (
