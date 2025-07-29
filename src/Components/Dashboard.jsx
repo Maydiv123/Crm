@@ -104,6 +104,8 @@ export default function Dashboard() {
   const [taskSuccess, setTaskSuccess] = useState('');
   const [showUserCalendar, setShowUserCalendar] = useState(false);
   const [selectedUserForCalendar, setSelectedUserForCalendar] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState(null);
   const [dashboardStats, setDashboardStats] = useState({
     stageStats: [],
     statusStats: [],
@@ -441,7 +443,22 @@ export default function Dashboard() {
   };
 
   const handleDelete = (idx) => {
-    setCards(prev => prev.filter((_, i) => i !== idx));
+    console.log('Delete button clicked for index:', idx);
+    setDeleteIndex(idx);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteIndex !== null) {
+      setCards(prev => prev.filter((_, i) => i !== deleteIndex));
+      setShowDeleteConfirm(false);
+      setDeleteIndex(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeleteIndex(null);
   };
 
   // Drag and drop handler for dnd-kit
@@ -690,8 +707,24 @@ export default function Dashboard() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="dashboard-card-title">{card.title}</div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button className="dashboard-card-edit-btn" onClick={() => handleEdit(idx)}><FaEdit /></button>
-                          <button className="dashboard-card-delete-btn" onClick={() => handleDelete(idx)}><FaTrash /></button>
+                          <button 
+                            className="dashboard-card-edit-btn" 
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleEdit(idx);
+                            }}
+                          >
+                            <FaEdit />
+                          </button>
+                          <button 
+                            className="dashboard-card-delete-btn" 
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleDelete(idx);
+                            }}
+                          >
+                            <FaTrash />
+                          </button>
                         </div>
                       </div>
                       {card.image && <img src={card.image} alt="custom" style={{ width: '100%', borderRadius: 8, margin: '8px 0' }} />}
@@ -933,6 +966,46 @@ export default function Dashboard() {
               setSelectedUserForCalendar(null);
             }}
           />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="dashboard-edit-modal">
+            <div className="dashboard-edit-modal-content">
+              <h3>🗑️ Delete Card</h3>
+              <p>Are you sure you want to delete this card? This action cannot be undone.</p>
+              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                <button 
+                  onClick={confirmDelete}
+                  style={{ 
+                    background: '#f44336', 
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Delete
+                </button>
+                <button 
+                  onClick={cancelDelete}
+                  style={{ 
+                    background: '#6c757d', 
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

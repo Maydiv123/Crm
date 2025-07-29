@@ -486,6 +486,9 @@
   cursor: pointer;
   margin-left: 2px;
   transition: color 0.2s;
+  pointer-events: auto;
+  z-index: 10;
+  position: relative;
 }
 .dashboard-card-delete-btn:hover {
   color: #b71c1c;
