@@ -59,6 +59,11 @@
   cursor: pointer;
   font-weight: 500;
   margin-right: 8px;
+  transition: color 0.2s;
+}
+.editpipeline-cancel:disabled {
+  color: #4a5a6a;
+  cursor: not-allowed;
 }
 .editpipeline-save {
   background: #1abc9c;
@@ -71,8 +76,12 @@
   font-weight: 600;
   transition: background 0.2s;
 }
-.editpipeline-save:hover {
+.editpipeline-save:hover:not(:disabled) {
   background: #159c85;
+}
+.editpipeline-save:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
 }
 .editpipeline-content {
   display: flex;
@@ -147,6 +156,14 @@
   flex-direction: column;
   gap: 10px;
   margin-bottom: 12px;
+  min-height: 50px;
+  transition: all 0.2s ease;
+}
+.editpipeline-stages-list-dragging {
+  background: rgba(26, 188, 156, 0.05);
+  border: 2px dashed rgba(26, 188, 156, 0.3);
+  border-radius: 8px;
+  padding: 8px;
 }
 .editpipeline-stage {
   display: flex;
@@ -160,6 +177,11 @@
   color: #17404e;
   gap: 10px;
   position: relative;
+  transition: all 0.2s ease;
+  cursor: grab;
+}
+.editpipeline-stage:active {
+  cursor: grabbing;
 }
 .editpipeline-stage-blue {
   background: #e3f1ff;
@@ -204,6 +226,42 @@
   color: #bdbdbd;
   margin-right: 10px;
   cursor: grab;
+  user-select: none;
+  transition: color 0.2s;
+}
+.editpipeline-drag:hover {
+  color: #1abc9c;
+}
+.editpipeline-drag:active {
+  cursor: grabbing;
+}
+
+/* Drag and drop visual feedback */
+.editpipeline-stage-dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+.editpipeline-stage-drag-over {
+  border: 2px dashed #1abc9c;
+  background: rgba(26, 188, 156, 0.1) !important;
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.editpipeline-drop-indicator {
+  height: 3px;
+  background: #1abc9c;
+  border-radius: 2px;
+  margin: 4px 0;
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 .editpipeline-addstage {
   background: none;

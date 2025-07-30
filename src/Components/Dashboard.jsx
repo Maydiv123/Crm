@@ -682,7 +682,7 @@ export default function Dashboard() {
         </div>
       )}
       <div className="dashboard-content">
-        <div className="dashboard-username">akay13230</div>
+        <div className="dashboard-username"></div>
         <div className="dashboard-filters">
           <button>Today</button>
           <button>Yesterday</button>

@@ -3,6 +3,32 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
+// GET /api/pipeline/test - test route to check database
+router.get('/test', async (req, res) => {
+  try {
+    console.log('Testing database connection...');
+    
+    // Check if pipelines table exists and has data
+    const [pipelines] = await pool.execute('SELECT * FROM pipelines');
+    console.log('All pipelines:', pipelines);
+    
+    // Check if pipeline_stages table has data
+    const [stages] = await pool.execute('SELECT * FROM pipeline_stages');
+    console.log('All stages:', stages);
+    
+    res.json({ 
+      message: 'Database test successful',
+      pipelineCount: pipelines.length,
+      stageCount: stages.length,
+      pipelines: pipelines,
+      stages: stages
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ message: `Database test failed: ${error.message}` });
+  }
+});
+
 // GET /api/pipeline - fetch pipeline config
 router.get('/', async (req, res) => {
   try {
@@ -246,19 +272,118 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT /api/pipeline/:id - rename a pipeline
+// PUT /api/pipeline/:id - rename a pipeline or update its stages
 router.put('/:id', async (req, res) => {
   try {
     const pipelineId = req.params.id;
-    const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ message: 'Name is required' });
+    const { name, columns } = req.body;
+    
+    console.log('PUT /api/pipeline/:id called');
+    console.log('pipelineId:', pipelineId);
+    console.log('name:', name);
+    console.log('columns:', columns);
+    
+    // Validate pipelineId
+    if (!pipelineId || isNaN(parseInt(pipelineId))) {
+      console.log('Invalid pipeline ID:', pipelineId);
+      return res.status(400).json({ message: 'Invalid pipeline ID' });
     }
-    await pool.execute('UPDATE pipelines SET name = ? WHERE id = ?', [name, pipelineId]);
-    res.json({ message: 'Pipeline renamed!' });
+    
+    // Validate columns if provided
+    if (columns && !Array.isArray(columns)) {
+      console.log('Columns is not an array:', columns);
+      return res.status(400).json({ message: 'Columns must be an array' });
+    }
+    
+    if (columns && columns.length === 0) {
+      console.log('Columns array is empty');
+      return res.status(400).json({ message: 'Columns array cannot be empty' });
+    }
+    
+    // Validate each column
+    if (columns) {
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        if (!column.key || !column.label) {
+          console.log(`Column ${i} is missing key or label:`, column);
+          return res.status(400).json({ message: `Column ${i} is missing key or label` });
+        }
+      }
+    }
+    
+    // Check if pipeline exists
+    const [pipelines] = await pool.execute(`
+      SELECT id FROM pipelines WHERE id = ?
+    `, [pipelineId]);
+    
+    console.log('Found pipelines:', pipelines);
+    
+    if (pipelines.length === 0) {
+      console.log('Pipeline not found');
+      return res.status(404).json({ message: 'Pipeline not found' });
+    }
+    
+    // Update name if provided
+    if (name) {
+      console.log('Updating pipeline name to:', name);
+      await pool.execute('UPDATE pipelines SET name = ? WHERE id = ?', [name, pipelineId]);
+    }
+    
+    // Update stages if columns are provided
+    if (columns && Array.isArray(columns)) {
+      console.log('Updating pipeline stages');
+      console.log('Columns to insert:', columns);
+      
+      // Clear existing stages for this pipeline
+      await pool.execute('DELETE FROM pipeline_stages WHERE pipeline_id = ?', [pipelineId]);
+      console.log('Cleared existing stages');
+
+      // Insert new stages
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        console.log(`Inserting stage ${i + 1}:`, column);
+        
+        try {
+          const [stageResult] = await pool.execute(`
+            INSERT INTO pipeline_stages (pipeline_id, stage_key, stage_name, stage_order, is_default, is_custom) 
+            VALUES (?, ?, ?, ?, ?, ?)
+          `, [
+            pipelineId,
+            column.key,
+            column.label,
+            i + 1,
+            column.isDefault || false,
+            !column.isDefault
+          ]);
+
+          const stageId = stageResult.insertId;
+          console.log(`Stage inserted with ID: ${stageId}`);
+
+          // Insert hints for this stage
+          if (column.hints) {
+            const hintTypes = ['beginner', 'intermediate', 'expert'];
+            for (const hintType of hintTypes) {
+              if (column.hints[hintType]) {
+                await pool.execute(`
+                  INSERT INTO pipeline_hints (stage_id, hint_type, hint_text) 
+                  VALUES (?, ?, ?)
+                `, [stageId, hintType, column.hints[hintType]]);
+              }
+            }
+          }
+        } catch (insertError) {
+          console.error(`Error inserting stage ${i + 1}:`, insertError);
+          throw new Error(`Failed to insert stage ${i + 1}: ${insertError.message}`);
+        }
+      }
+      console.log('All stages updated successfully');
+    }
+    
+    console.log('Pipeline update completed successfully');
+    res.json({ message: 'Pipeline updated!' });
   } catch (error) {
-    console.error('Rename pipeline error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Update pipeline error:', error);
+    res.status(500).json({ message: `Server error: ${error.message}` });
   }
 });
 

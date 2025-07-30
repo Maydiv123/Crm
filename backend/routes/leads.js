@@ -605,13 +605,28 @@ router.get('/stats/win-loss', auth, async (req, res) => {
 router.get('/emails', auth, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT DISTINCT contact_email FROM leads WHERE assigned_to = ? AND contact_email IS NOT NULL AND contact_email != ""',
-      [req.user.id]
+      'SELECT DISTINCT contact_email FROM leads WHERE contact_email IS NOT NULL AND contact_email != "" ORDER BY contact_email',
+      []
     );
     const emails = rows.map(r => r.contact_email).filter(Boolean);
     res.json({ emails });
   } catch (error) {
     console.error('Get lead emails error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/leads/emails/public - Get all unique contact emails without authentication
+router.get('/emails/public', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT DISTINCT contact_email FROM leads WHERE contact_email IS NOT NULL AND contact_email != "" ORDER BY contact_email',
+      []
+    );
+    const emails = rows.map(r => r.contact_email).filter(Boolean);
+    res.json({ emails });
+  } catch (error) {
+    console.error('Get public lead emails error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

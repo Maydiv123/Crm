@@ -36,7 +36,7 @@
   font-size: 0.9rem;
 }
 
-.automate-btn, .new-lead-btn {
+.new-lead-btn {
   background: #10b981;
   color: #fff;
   border: none;
@@ -47,7 +47,7 @@
   transition: background 0.2s;
 }
 
-.automate-btn:hover, .new-lead-btn:hover {
+.new-lead-btn:hover {
   background: #059669;
 }
 

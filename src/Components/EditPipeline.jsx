@@ -136,16 +136,139 @@ const colorClass = {
   deepteal: "editpipeline-stage-deepteal",
 };
 
-export default function EditPipeline({ onClose, pipelines, onSave }) {
+export default function EditPipeline({ onClose, pipelines, selectedPipelineIndex, onSave }) {
   const [selectedTemplate, setSelectedTemplate] = useState(0);
   const [editingColorIdx, setEditingColorIdx] = useState(null);
-  const [templateData, setTemplateData] = useState(templates);
+  
+  // Use actual pipeline data instead of hardcoded templates
+  const [templateData, setTemplateData] = useState(() => {
+    // Convert actual pipeline data to template format
+    const currentPipeline = pipelines[selectedPipelineIndex];
+    if (!currentPipeline) return templates;
+    
+    // Create template from actual pipeline data
+    const pipelineTemplate = {
+      name: currentPipeline.name,
+      activeStages: currentPipeline.stages
+        .filter(stage => 
+          !stage.toLowerCase().includes('deal - won') && 
+          !stage.toLowerCase().includes('deal - lost') &&
+          !stage.toLowerCase().includes('deal won') && 
+          !stage.toLowerCase().includes('deal lost')
+        )
+        .map((stage, index) => ({
+          label: stage,
+          color: Object.keys(colorClass)[index % Object.keys(colorClass).length]
+        })),
+      closedStages: currentPipeline.stages
+        .filter(stage => 
+          stage.toLowerCase().includes('deal - won') || 
+          stage.toLowerCase().includes('deal - lost') ||
+          stage.toLowerCase().includes('deal won') || 
+          stage.toLowerCase().includes('deal lost')
+        )
+        .map((stage, index) => ({
+          label: stage,
+          color: stage.toLowerCase().includes('won') ? 'green' : 'grey'
+        }))
+    };
+    
+    return [pipelineTemplate, ...templates.slice(1)]; // Keep other templates as options
+  });
+  
   const template = templateData[selectedTemplate];
   const paletteRef = useRef(null);
   const pencilRefs = useRef([]);
   const [addingStage, setAddingStage] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageColor, setNewStageColor] = useState("blue");
+  
+  // Drag and drop state
+  const [draggedStage, setDraggedStage] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Save loading state
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update template data when pipeline changes
+  useEffect(() => {
+    const currentPipeline = pipelines[selectedPipelineIndex];
+    if (!currentPipeline) return;
+    
+    // Create template from actual pipeline data
+    const pipelineTemplate = {
+      name: currentPipeline.name,
+      activeStages: currentPipeline.stages
+        .filter(stage => 
+          !stage.toLowerCase().includes('deal - won') && 
+          !stage.toLowerCase().includes('deal - lost') &&
+          !stage.toLowerCase().includes('deal won') && 
+          !stage.toLowerCase().includes('deal lost')
+        )
+        .map((stage, index) => ({
+          label: stage,
+          color: Object.keys(colorClass)[index % Object.keys(colorClass).length]
+        })),
+      closedStages: currentPipeline.stages
+        .filter(stage => 
+          stage.toLowerCase().includes('deal - won') || 
+          stage.toLowerCase().includes('deal - lost') ||
+          stage.toLowerCase().includes('deal won') || 
+          stage.toLowerCase().includes('deal lost')
+        )
+        .map((stage, index) => ({
+          label: stage,
+          color: stage.toLowerCase().includes('won') ? 'green' : 'grey'
+        }))
+    };
+    
+    setTemplateData([pipelineTemplate, ...templates.slice(1)]);
+  }, [pipelines, selectedPipelineIndex]);
+
+  // Cleanup effect to remove duplicates from active stages
+  useEffect(() => {
+    if (templateData.length > 0 && templateData[selectedTemplate]) {
+      const currentTemplate = templateData[selectedTemplate];
+      const hasDuplicates = currentTemplate.activeStages.some(stage => 
+        stage.label.toLowerCase().includes('deal - won') || 
+        stage.label.toLowerCase().includes('deal - lost') ||
+        stage.label.toLowerCase().includes('deal won') || 
+        stage.label.toLowerCase().includes('deal lost')
+      );
+      
+      if (hasDuplicates) {
+        setTemplateData(prev => prev.map((tpl, idx) => {
+          if (idx !== selectedTemplate) return tpl;
+          return {
+            ...tpl,
+            activeStages: tpl.activeStages.filter(stage => 
+              !stage.label.toLowerCase().includes('deal - won') && 
+              !stage.label.toLowerCase().includes('deal - lost') &&
+              !stage.label.toLowerCase().includes('deal won') && 
+              !stage.label.toLowerCase().includes('deal lost')
+            )
+          };
+        }));
+      }
+    }
+  }, [templateData, selectedTemplate]);
+
+  // Force immediate cleanup on mount
+  useEffect(() => {
+    setTemplateData(prev => prev.map((tpl, idx) => {
+      if (idx !== selectedTemplate) return tpl;
+      return {
+        ...tpl,
+        activeStages: tpl.activeStages.filter(stage => 
+          !stage.label.toLowerCase().includes('deal - won') && 
+          !stage.label.toLowerCase().includes('deal - lost') &&
+          !stage.label.toLowerCase().includes('deal won') && 
+          !stage.label.toLowerCase().includes('deal lost')
+        )
+      };
+    }));
+  }, []);
 
   useEffect(() => {
     if (editingColorIdx === null) return;
@@ -239,20 +362,115 @@ export default function EditPipeline({ onClose, pipelines, onSave }) {
     }
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e, stageIndex) => {
+    setDraggedStage(stageIndex);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target);
+  };
+
+  const handleDragOver = (e, stageIndex) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(stageIndex);
+  };
+
+  const handleDragEnter = (e, stageIndex) => {
+    e.preventDefault();
+    setDragOverIndex(stageIndex);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    
+    if (draggedStage === null || draggedStage === dropIndex) {
+      setDragOverIndex(null);
+      setIsDragging(false);
+      setDraggedStage(null);
+      return;
+    }
+
+    setTemplateData((prev) => {
+      const newTemplates = prev.map((tpl, tIdx) => {
+        if (tIdx !== selectedTemplate) return tpl;
+        
+        const stages = [...tpl.activeStages];
+        const draggedItem = stages[draggedStage];
+        stages.splice(draggedStage, 1);
+        stages.splice(dropIndex, 0, draggedItem);
+        
+        return {
+          ...tpl,
+          activeStages: stages,
+        };
+      });
+      return newTemplates;
+    });
+
+    setDragOverIndex(null);
+    setIsDragging(false);
+    setDraggedStage(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragOverIndex(null);
+    setIsDragging(false);
+    setDraggedStage(null);
+  };
+
   // On Save, update pipelines in parent (Interface.jsx)
-  const handleSave = () => {
-    // Convert templateData[selectedTemplate] to pipelines format
-    let newStages = templateData[selectedTemplate].activeStages.map(s => s.label);
-    // Always append 'Deal - won' and 'Deal - lost' if not present
-    if (!newStages.includes('Deal - won')) newStages.push('Deal - won');
-    if (!newStages.includes('Deal - lost')) newStages.push('Deal - lost');
-    const newPipeline = {
-      ...pipelines[0],
-      name: templateData[selectedTemplate].name, // set the name to the selected template
-      stages: newStages,
-    };
-    const newPipelines = [newPipeline];
-    if (onSave) onSave(newPipelines);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Get the current pipeline to preserve its ID and other properties
+      const currentPipeline = pipelines[selectedPipelineIndex];
+      
+      if (!currentPipeline) {
+        throw new Error('No current pipeline found');
+      }
+      
+      // Get stages from the template data (which now contains actual pipeline data)
+      let newStages = templateData[selectedTemplate].activeStages
+        .map(s => s.label)
+        .filter(stage => 
+          !stage.toLowerCase().includes('deal - won') && 
+          !stage.toLowerCase().includes('deal - lost') &&
+          !stage.toLowerCase().includes('deal won') && 
+          !stage.toLowerCase().includes('deal lost')
+        ); // Filter out closed stages
+      
+      // Always append 'Deal - won' and 'Deal - lost' at the end
+      newStages.push('Deal - won');
+      newStages.push('Deal - lost');
+      
+      const newPipeline = {
+        ...currentPipeline, // Preserve ID and other properties
+        name: templateData[selectedTemplate].name, // set the name to the selected template
+        stages: newStages,
+      };
+      
+      // Create new pipelines array with the updated pipeline
+      const newPipelines = pipelines.map((p, index) => 
+        index === selectedPipelineIndex ? newPipeline : p
+      );
+      
+      if (onSave) {
+        await onSave(newPipelines);
+      } else {
+        console.error('onSave function is not provided!');
+      }
+    } catch (error) {
+      console.error('Error in EditPipeline handleSave:', error);
+      alert(`Failed to save pipeline changes: ${error.message}. Please try again.`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -261,8 +479,14 @@ export default function EditPipeline({ onClose, pipelines, onSave }) {
         <div className="editpipeline-header">
           <span>Set up your pipeline</span>
           <div>
-            <button className="editpipeline-cancel" onClick={onClose}>Cancel</button>
-            <button className="editpipeline-save" onClick={handleSave}>Save</button>
+            <button className="editpipeline-cancel" onClick={onClose} disabled={isSaving}>Cancel</button>
+            <button 
+              className="editpipeline-save" 
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
         <div className="editpipeline-content">
@@ -286,65 +510,112 @@ export default function EditPipeline({ onClose, pipelines, onSave }) {
             </div>
             <div className="editpipeline-section">
               <div className="editpipeline-section-title">Active stages</div>
-              <div className="editpipeline-stages-list">
+              <div 
+                className={`editpipeline-stages-list ${isDragging ? "editpipeline-stages-list-dragging" : ""}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedStage !== null) {
+                    handleDrop(e, template.activeStages.length);
+                  }
+                }}
+              >
                 {template.activeStages.map((stage, idx) => (
-                  <div key={stage.label + idx} className={"editpipeline-stage " + colorClass[stage.color] || ""}>
-                    <span className="editpipeline-drag">⋮⋮</span> {stage.label}
-                    <span className="editpipeline-stage-actions">
-                      <FaPencilAlt
-                        className="editpipeline-stage-edit"
-                        onClick={() => handleColorEdit(idx)}
-                        ref={el => pencilRefs.current[idx] = el}
-                      />
-                      <FaTimes className="editpipeline-stage-delete" onClick={() => handleDeleteStage(idx)} />
-                    </span>
-                    {editingColorIdx === idx && (
-                      <div className="editpipeline-color-palette" ref={paletteRef}>
-                        {colorPalette.map((c) => (
-                          <span
-                            key={c.name}
-                            className="editpipeline-color-dot"
-                            style={{ background: c.code, border: stage.color === c.name ? '2px solid #333' : '2px solid transparent' }}
-                            onClick={() => handleColorSelect(idx, c.name)}
-                          />
-                        ))}
-                      </div>
+                  <React.Fragment key={stage.label + idx}>
+                    {dragOverIndex === idx && draggedStage !== null && draggedStage !== idx && (
+                      <div className="editpipeline-drop-indicator" />
                     )}
-                  </div>
+                    <div
+                      className={`editpipeline-stage ${colorClass[stage.color] || ""} ${
+                        draggedStage === idx ? "editpipeline-stage-dragging" : ""
+                      } ${dragOverIndex === idx ? "editpipeline-stage-drag-over" : ""}`}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDragEnter={(e) => handleDragEnter(e, idx)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <span className="editpipeline-drag" title="Drag to reorder">⋮⋮</span> {stage.label}
+                      <span className="editpipeline-stage-actions">
+                        <FaPencilAlt
+                          className="editpipeline-stage-edit"
+                          onClick={() => handleColorEdit(idx)}
+                          ref={el => pencilRefs.current[idx] = el}
+                        />
+                        <FaTimes className="editpipeline-stage-delete" onClick={() => handleDeleteStage(idx)} />
+                      </span>
+                      {editingColorIdx === idx && (
+                        <div className="editpipeline-color-palette" ref={paletteRef}>
+                          {colorPalette.map((c) => (
+                            <span
+                              key={c.name}
+                              className="editpipeline-color-dot"
+                              style={{ background: c.code, border: stage.color === c.name ? '2px solid #333' : '2px solid transparent' }}
+                              onClick={() => handleColorSelect(idx, c.name)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </React.Fragment>
                 ))}
+                {dragOverIndex === template.activeStages.length && draggedStage !== null && (
+                  <div className="editpipeline-drop-indicator" />
+                )}
                 {addingStage && (
-                  <div className={"editpipeline-stage " + colorClass[newStageColor]}>
-                    <span className="editpipeline-drag">⋮⋮</span>
-                    <input
-                      className="editpipeline-input"
-                      style={{width: '160px', margin: '0 8px'}}
-                      autoFocus
-                      value={newStageName}
-                      onChange={handleNewStageNameChange}
-                      onBlur={handleNewStageNameSave}
-                      onKeyDown={handleNewStageKeyDown}
-                      placeholder="Stage name"
-                    />
-                    <span className="editpipeline-stage-actions">
-                      <FaPencilAlt
-                        className="editpipeline-stage-edit"
-                        onClick={() => setEditingColorIdx(template.activeStages.length)}
-                      />
-                      <FaTimes className="editpipeline-stage-delete" onClick={() => { setAddingStage(false); setEditingColorIdx(null); }} />
-                    </span>
-                    {editingColorIdx === template.activeStages.length && (
-                      <div className="editpipeline-color-palette" ref={paletteRef}>
-                        {colorPalette.map((c) => (
-                          <span
-                            key={c.name}
-                            className="editpipeline-color-dot"
-                            style={{ background: c.code, border: newStageColor === c.name ? '2px solid #333' : '2px solid transparent' }}
-                            onClick={() => setNewStageColor(c.name)}
-                          />
-                        ))}
-                      </div>
+                  <React.Fragment>
+                    {dragOverIndex === template.activeStages.length && draggedStage !== null && draggedStage !== template.activeStages.length && (
+                      <div className="editpipeline-drop-indicator" />
                     )}
-                  </div>
+                    <div
+                      className={`editpipeline-stage ${colorClass[newStageColor]} ${
+                        draggedStage === template.activeStages.length ? "editpipeline-stage-dragging" : ""
+                      } ${dragOverIndex === template.activeStages.length ? "editpipeline-stage-drag-over" : ""}`}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, template.activeStages.length)}
+                      onDragOver={(e) => handleDragOver(e, template.activeStages.length)}
+                      onDragEnter={(e) => handleDragEnter(e, template.activeStages.length)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, template.activeStages.length)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <span className="editpipeline-drag" title="Drag to reorder">⋮⋮</span>
+                      <input
+                        className="editpipeline-input"
+                        style={{width: '160px', margin: '0 8px'}}
+                        autoFocus
+                        value={newStageName}
+                        onChange={handleNewStageNameChange}
+                        onBlur={handleNewStageNameSave}
+                        onKeyDown={handleNewStageKeyDown}
+                        placeholder="Stage name"
+                      />
+                      <span className="editpipeline-stage-actions">
+                        <FaPencilAlt
+                          className="editpipeline-stage-edit"
+                          onClick={() => setEditingColorIdx(template.activeStages.length)}
+                        />
+                        <FaTimes className="editpipeline-stage-delete" onClick={() => { setAddingStage(false); setEditingColorIdx(null); }} />
+                      </span>
+                      {editingColorIdx === template.activeStages.length && (
+                        <div className="editpipeline-color-palette" ref={paletteRef}>
+                          {colorPalette.map((c) => (
+                            <span
+                              key={c.name}
+                              className="editpipeline-color-dot"
+                              style={{ background: c.code, border: newStageColor === c.name ? '2px solid #333' : '2px solid transparent' }}
+                              onClick={() => setNewStageColor(c.name)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </React.Fragment>
                 )}
               </div>
               <button className="editpipeline-addstage" onClick={handleAddStageClick}>+ Add stage</button>

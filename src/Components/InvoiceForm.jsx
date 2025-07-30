@@ -4,6 +4,7 @@ import { dummyClients, calculateInvoiceTotals, generateInvoiceId } from './Invoi
 import InvoiceImg from '../assets/Invoice.png';
 
 export default function InvoiceForm({ invoice, onSave, onCancel, pipelines = [], users = [], priorities = [], tags = [] }) {
+  const [realClients, setRealClients] = useState([]);
   const [formData, setFormData] = useState({
     id: '',
     clientId: '',
@@ -57,6 +58,39 @@ export default function InvoiceForm({ invoice, onSave, onCancel, pipelines = [],
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [tagInput, setTagInput] = useState('');
+
+  // Fetch real clients from database
+  useEffect(() => {
+    fetch('/api/leads/emails/public')
+      .then(res => res.json())
+      .then(data => {
+        if (data.emails && data.emails.length > 0) {
+          console.log('✅ Real client emails loaded for invoice:', data.emails);
+          // Convert emails to client objects
+          const clients = data.emails.map((email, index) => ({
+            id: `C-${String(index + 1).padStart(3, '0')}`,
+            name: email.split('@')[0], // Use email prefix as name
+            email: email,
+            phone: '+91 9000000000',
+            address: 'Address not available',
+            company: email.split('@')[1].split('.')[0], // Use domain as company
+            website: `www.${email.split('@')[1]}`,
+            notes: 'Client from database',
+            tags: ['database-client'],
+            createdAt: new Date().toISOString().split('T')[0],
+            lastContact: new Date().toISOString().split('T')[0]
+          }));
+          setRealClients(clients);
+                 } else {
+           console.log('⚠️ No real clients found in database');
+           setRealClients([]);
+         }
+      })
+             .catch(err => {
+         console.log('❌ Failed to fetch real clients from database');
+         setRealClients([]);
+       });
+  }, []);
 
   useEffect(() => {
     if (invoice) {
@@ -353,14 +387,14 @@ export default function InvoiceForm({ invoice, onSave, onCancel, pipelines = [],
                 <select
                   value={formData.clientId}
                   onChange={(e) => {
-                    const client = dummyClients.find(c => c.id === e.target.value);
+                    const client = realClients.find(c => c.id === e.target.value);
                     handleClientSelect(client);
                   }}
                   style={{ borderRadius: '8px', border: '1px solid #ddd', padding: '10px', width: '100%' }}
                 >
                   <option value="">Select a client</option>
-                  {dummyClients.map(client => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
+                  {realClients.map(client => (
+                    <option key={client.id} value={client.id}>{client.name} ({client.email})</option>
                   ))}
                 </select>
               </div>

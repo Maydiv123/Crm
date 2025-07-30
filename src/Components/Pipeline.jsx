@@ -44,7 +44,7 @@ const Pipeline = () => {
         
         <div className="pipeline-stats">
           <span className="stat">1 lead: ₹0</span>
-          <button className="automate-btn">AUTOMATE</button>
+          
           <button className="new-lead-btn">+ NEW LEAD</button>
         </div>
       </div>

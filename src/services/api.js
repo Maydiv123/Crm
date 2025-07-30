@@ -72,6 +72,7 @@ export const pipelineAPI = {
   create: (name, stages) => api.post('/pipeline/all', { name, stages }),
   rename: (id, name) => api.put(`/pipeline/${id}`, { name }),
   delete: (id) => api.delete(`/pipeline/${id}`),
+  update: (id, data) => api.put(`/pipeline/${id}`, data),
 };
 
 // Tasks API

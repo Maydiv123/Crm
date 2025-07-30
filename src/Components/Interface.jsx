@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Automate from "./Automate";
+
 import Change from './Change';
-import ActiveLead from "./ActiveLead";
 import { FaBars, FaChevronDown, FaPlus, FaCheck, FaEllipsisV, FaBroadcastTower, FaEdit, FaPrint, FaCogs, FaArrowDown, FaArrowUp, FaClone, FaUserCheck, FaPlusSquare, FaExchangeAlt, FaTrash, FaTags, FaTimes, FaCalendarAlt, FaCheck as FaCheckIcon } from "react-icons/fa";
 import "./Interface.css";
 import EditPipeline from "./EditPipeline";
@@ -350,7 +349,6 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [leads, setLeads] = useState([]);
   // In Interface component, add selectedLead state:
   const [selectedLead, setSelectedLead] = useState(null);
-  const [showActiveLead, setShowActiveLead] = useState(false);
   const [showEditPipeline, setShowEditPipeline] = useState(false);
   const [showListSettings, setShowListSettings] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
@@ -386,6 +384,11 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [selectedLeadIds, setSelectedLeadIds] = useState([]);
   const [leadModalPipelineIndex, setLeadModalPipelineIndex] = useState(0);
   const [activeDotIndex, setActiveDotIndex] = useState({}); // Track active dot for each lead
+  // Add state for contact info modal
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactModalData, setContactModalData] = useState(null);
+  const [contactModalType, setContactModalType] = useState(''); // 'call', 'email'
+  const [pipelineUpdateTrigger, setPipelineUpdateTrigger] = useState(0); // Add this to force re-renders
 
   // Function to detect overflow and add scroll indicators
   const checkPipelineOverflow = () => {
@@ -673,30 +676,124 @@ export default function Interface({ onSidebarNav, navigate }) {
 
   // Delete pipeline and persist to backend
   const handleDeletePipeline = async (idx) => {
-    if (pipelines.length === 1) return; // Prevent deleting last pipeline
-    const pipelineId = pipelines[idx]?.id;
-    
-    // Update global state
-    deletePipeline(idx);
-    setContextMenu({ visible: false, x: 0, y: 0, index: null });
-    
-    if (selectedPipelineIndex === idx) setSelectedPipelineIndex(0);
-    else if (selectedPipelineIndex > idx) setSelectedPipelineIndex(selectedPipelineIndex - 1);
-    
-    if (pipelineId) {
+    if (window.confirm('Are you sure you want to delete this pipeline?')) {
       try {
-        await pipelineAPI.delete(pipelineId);
-        // Refresh pipelines from backend
+        await pipelineAPI.delete(pipelines[idx].id);
         await fetchPipelines();
+        if (selectedPipelineIndex === idx) {
+          setSelectedPipelineIndex(0);
+        }
       } catch (error) {
         console.error('Error deleting pipeline:', error);
+        alert('Failed to delete pipeline');
       }
     }
   };
 
-  const handleSavePipeline = (newPipelines) => {
-    updatePipelines(newPipelines);
-    setShowEditPipeline(false);
+
+
+  const handleSavePipeline = async (newPipelines) => {
+    try {
+      console.log('=== handleSavePipeline started ===');
+      console.log('newPipelines received:', newPipelines);
+      console.log('selectedPipelineIndex:', selectedPipelineIndex);
+      console.log('current pipelines state:', pipelines);
+      
+      // Test backend connectivity first
+      console.log('Testing backend connectivity...');
+      try {
+        const connectivityTest = await fetch('http://localhost:5000/api/pipeline/all');
+        if (connectivityTest.ok) {
+          const testData = await connectivityTest.json();
+          console.log('Backend is running, database test result:', testData);
+        } else {
+          console.error('Backend responded with error:', connectivityTest.status);
+        }
+      } catch (connectivityError) {
+        console.error('Backend connectivity test failed:', connectivityError);
+        console.error('This means the backend server is not running on localhost:5000');
+        alert('Backend server is not running. Please start the backend server first.');
+        return;
+      }
+      
+      // Save to backend first
+      const currentPipeline = newPipelines[selectedPipelineIndex]; // Get the current pipeline
+      console.log('currentPipeline to save:', currentPipeline);
+      
+      if (currentPipeline && currentPipeline.id) {
+        // Convert stages to the format expected by the backend
+        const columns = currentPipeline.stages.map((stage, index) => ({
+          key: stage.toLowerCase().replace(/[^a-z0-9]/g, ''), // Remove all non-alphanumeric characters
+          label: stage,
+          isDefault: index === 0, // First stage is default
+          hints: {} // Empty hints for now
+        }));
+        
+        console.log('Sending columns to backend:', columns);
+        console.log('Pipeline ID:', currentPipeline.id);
+        console.log('Full request data:', { columns });
+        
+        try {
+          // Save to backend using the pipeline update API
+          console.log('=== Making backend API call ===');
+          console.log('URL:', `PUT /api/pipeline/${currentPipeline.id}`);
+          console.log('Request body:', { name: currentPipeline.name, columns: columns });
+          
+          const response = await pipelineAPI.update(currentPipeline.id, {
+            name: currentPipeline.name, // Add the required name field
+            columns: columns
+          });
+          console.log('Backend response:', response);
+          
+          // Update local state AFTER successful backend save
+          console.log('Updating local state...');
+          updatePipelines(newPipelines);
+          setShowEditPipeline(false);
+          
+          // Refresh pipelines from backend to ensure consistency
+          await fetchPipelines();
+          console.log('Pipeline saved to backend successfully');
+          
+          // Add a small delay to ensure backend has processed the changes
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Fetch again to ensure we have the latest data
+          await fetchPipelines();
+          console.log('Second fetch completed after delay');
+          
+          // Force interface to re-render with new pipeline data
+          setPipelineUpdateTrigger(prev => prev + 1);
+          console.log('Pipeline update trigger incremented');
+          
+        } catch (backendError) {
+          console.error('Backend save failed, but local state updated:', backendError);
+          console.error('Error details:', backendError.response?.data);
+          console.error('Error status:', backendError.response?.status);
+          console.error('Error message:', backendError.message);
+          
+          // Even if backend fails, update local state
+          console.log('Updating local state despite backend failure...');
+          updatePipelines(newPipelines);
+          setShowEditPipeline(false);
+          
+          alert('Pipeline changes saved locally. Backend sync failed - please check your connection.');
+        }
+      } else {
+        console.error('No pipeline ID found:', currentPipeline);
+        
+        // Update local state even without backend ID
+        console.log('Updating local state without backend ID...');
+        updatePipelines(newPipelines);
+        setShowEditPipeline(false);
+        
+        alert('Pipeline changes saved locally. No backend ID found for this pipeline.');
+      }
+      
+      console.log('=== handleSavePipeline finished ===');
+    } catch (error) {
+      console.error('Error in handleSavePipeline:', error);
+      alert(`Failed to save pipeline changes: ${error.message}. Please try again.`);
+    }
   };
 
   // In Interface component, update leads state when stage changes:
@@ -792,6 +889,40 @@ export default function Interface({ onSidebarNav, navigate }) {
     localStorage.setItem('selectedPipelineName', pipelines[idx].name);
   };
 
+  // Add handlers for contact action buttons
+  const handleCallClick = (lead) => {
+    setContactModalData(lead);
+    setContactModalType('call');
+    setShowContactModal(true);
+  };
+
+  const handleEmailClick = (lead) => {
+    setContactModalData(lead);
+    setContactModalType('email');
+    setShowContactModal(true);
+  };
+
+  const handleCloseContactModal = () => {
+    setShowContactModal(false);
+    setContactModalData(null);
+    setContactModalType('');
+  };
+
+  // Add copy functionality
+  const handleCopyToClipboard = async (text, buttonElement) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      buttonElement.textContent = 'Copied!';
+      buttonElement.classList.add('copied');
+      setTimeout(() => {
+        buttonElement.textContent = 'Copy';
+        buttonElement.classList.remove('copied');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
   // On mount, restore selected pipeline from localStorage if available
   useEffect(() => {
     const savedName = localStorage.getItem('selectedPipelineName');
@@ -804,6 +935,55 @@ export default function Interface({ onSidebarNav, navigate }) {
     }
   }, [pipelines]);
 
+  // Helper function to check if a field has data
+  const hasData = (value) => {
+    return value && value.toString().trim() !== '' && value.toString().trim() !== 'N/A';
+  };
+
+  // Helper function to get field value with fallback to different naming conventions
+  const getFieldValue = (lead, fieldNames) => {
+    for (const fieldName of fieldNames) {
+      if (hasData(lead[fieldName])) {
+        return lead[fieldName];
+      }
+    }
+    return null;
+  };
+
+  // Helper function to render contact field only if it has data
+  const renderContactField = (label, value, isHighlighted = false, showCopy = false) => {
+    if (!hasData(value)) return null;
+    
+    return (
+      <>
+        <p><strong>{label}:</strong></p>
+        <div className={`contact-value ${isHighlighted ? 'highlight' : ''}`}>
+          <span className="contact-text">{value}</span>
+          {showCopy && (
+            <button 
+              className="copy-btn" 
+              onClick={(e) => handleCopyToClipboard(value, e.target)}
+            >
+              Copy
+            </button>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  // Helper function to check if any relevant data exists for the modal type
+  const hasRelevantData = (lead, type) => {
+    switch (type) {
+      case 'call':
+        return hasData(getFieldValue(lead, ['contactPhone', 'phone', 'contact_phone']));
+      case 'email':
+        return hasData(getFieldValue(lead, ['contactEmail', 'email', 'contact_email']));
+      default:
+        return false;
+    }
+  };
+
   if (selectedPipelineIndex === null || !pipelines[selectedPipelineIndex]) return null;
   return (
     <div className="crm-main-wrapper">
@@ -811,10 +991,10 @@ export default function Interface({ onSidebarNav, navigate }) {
         <EditPipeline
           onClose={() => setShowEditPipeline(false)}
           pipelines={pipelines}
+          selectedPipelineIndex={selectedPipelineIndex}
           onSave={handleSavePipeline}
         />
       )}
-      {showActiveLead && <ActiveLead onClose={() => setShowActiveLead(false)} />}
       {showLeadsSidebar && (
         <div className="crm-leads-sidebar-overlay" onClick={handleCloseLeadsSidebar}>
           <div className="crm-leads-sidebar">
@@ -1166,7 +1346,6 @@ export default function Interface({ onSidebarNav, navigate }) {
               <span className="crm-leads-title">{pipelines[selectedPipelineIndex].name}</span>
               <FaChevronDown className="crm-leads-dropdown-icon" />
             </div>
-            <div className="crm-filter-chip" onClick={() => setShowActiveLead(true)} style={{cursor: 'pointer'}}>Active leads</div>
             <input className="crm-search" placeholder="Search and filter" />
           </div>
           <div className="crm-topbar-center">
@@ -1187,11 +1366,8 @@ export default function Interface({ onSidebarNav, navigate }) {
                 </div>
               )}
             </div>
-            <button className="crm-automate-btn" onClick={() => navigate('/leads/automate')}>⚡ AUTOMATE</button>
-            <button className="crm-newlead-btn" onClick={() => {
-              setLeadModalPipelineIndex(selectedPipelineIndex);
-              setShowLeadModal(true);
-            }}>+ NEW LEAD</button>
+            
+            <button className="crm-new-lead-btn" onClick={() => setShowLeadModal(true)}>+ NEW LEAD</button>
           </div>
         </header>
         {showListSettings ? (
@@ -1213,8 +1389,8 @@ export default function Interface({ onSidebarNav, navigate }) {
         </div>
         )}
         <section className="crm-pipeline">
-          {pipelines[selectedPipelineIndex].stages.map((stage, idx) => (
-            <div className="crm-pipeline-stage" key={stage}>
+          {pipelines[selectedPipelineIndex] && pipelines[selectedPipelineIndex].stages.map((stage, idx) => (
+            <div className="crm-pipeline-stage" key={`${stage}-${pipelineUpdateTrigger}-${idx}`}>
               <div className="crm-pipeline-stage-title">{stage.toUpperCase()}</div>
               <div className="crm-pipeline-stage-info">{
                 leads.filter(lead => {
@@ -1368,7 +1544,7 @@ export default function Interface({ onSidebarNav, navigate }) {
                         className="crm-lead-card-action"
                         onClick={(e) => {
                           e.stopPropagation();
-                          alert(`Calling ${lead.contactName || lead.name || 'Lead'}`);
+                          handleCallClick(lead);
                         }}
                       >
                         📞
@@ -1378,20 +1554,10 @@ export default function Interface({ onSidebarNav, navigate }) {
                         className="crm-lead-card-action"
                         onClick={(e) => {
                           e.stopPropagation();
-                          alert(`Emailing ${lead.contactName || lead.name || 'Lead'}`);
+                          handleEmailClick(lead);
                         }}
                       >
                         ✉️
-                      </span>
-                      <span 
-                        title="Note" 
-                        className="crm-lead-card-action"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          alert(`Adding note for ${lead.contactName || lead.name || 'Lead'}`);
-                        }}
-                      >
-                        📝
                       </span>
                     </div>
                   </div>
@@ -1424,7 +1590,6 @@ export default function Interface({ onSidebarNav, navigate }) {
                   <div className="crm-lead-card-actions">
                     <span title="Call" className="crm-lead-card-action">📞</span>
                     <span title="Email" className="crm-lead-card-action">✉️</span>
-                    <span title="Note" className="crm-lead-card-action">📝</span>
                   </div>
                 </div>
               )} */}
@@ -1487,6 +1652,58 @@ export default function Interface({ onSidebarNav, navigate }) {
             timeline={timeline}
             onLeadUpdate={handleLeadUpdate}
           />
+        </div>
+      )}
+      {showContactModal && contactModalData && (
+        <div className="crm-modal-overlay">
+          <div className="crm-modal crm-contact-modal">
+            <button className="crm-modal-close" onClick={handleCloseContactModal}>×</button>
+            <div className="crm-modal-title">
+              {contactModalType === 'call' && '📞 Call Information'}
+              {contactModalType === 'email' && '✉️ Email Information'}
+            </div>
+            <div className="crm-modal-content">
+              {contactModalType === 'call' && (
+                <div className="crm-contact-info">
+                  {!hasRelevantData(contactModalData, 'call') ? (
+                    <div className="no-data-message">
+                      <p>📞 No phone number available for this lead.</p>
+                      <p>Please add a phone number when creating or editing the lead.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderContactField('Name', getFieldValue(contactModalData, ['contactName', 'name', 'contact_name']))}
+                      {renderContactField('Phone Number', getFieldValue(contactModalData, ['contactPhone', 'phone', 'contact_phone']), true, true)}
+                      {renderContactField('Email', getFieldValue(contactModalData, ['contactEmail', 'email', 'contact_email']))}
+                      {renderContactField('Company', getFieldValue(contactModalData, ['companyName', 'company_name']))}
+                      {renderContactField('Address', getFieldValue(contactModalData, ['companyAddress', 'company_address']))}
+                    </>
+                  )}
+                </div>
+              )}
+              {contactModalType === 'email' && (
+                <div className="crm-contact-info">
+                  {!hasRelevantData(contactModalData, 'email') ? (
+                    <div className="no-data-message">
+                      <p>✉️ No email address available for this lead.</p>
+                      <p>Please add an email address when creating or editing the lead.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {renderContactField('Name', getFieldValue(contactModalData, ['contactName', 'name', 'contact_name']))}
+                      {renderContactField('Email Address', getFieldValue(contactModalData, ['contactEmail', 'email', 'contact_email']), true, true)}
+                      {renderContactField('Phone', getFieldValue(contactModalData, ['contactPhone', 'phone', 'contact_phone']))}
+                      {renderContactField('Company', getFieldValue(contactModalData, ['companyName', 'company_name']))}
+                      {renderContactField('Address', getFieldValue(contactModalData, ['companyAddress', 'company_address']))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="crm-modal-actions">
+              <button className="crm-modal-save" onClick={handleCloseContactModal}>Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

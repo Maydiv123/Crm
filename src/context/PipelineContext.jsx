@@ -20,14 +20,21 @@ export const PipelineProvider = ({ children }) => {
   const fetchPipelines = async () => {
     try {
       setIsLoading(true);
+      console.log('=== fetchPipelines started ===');
+      console.log('Fetching pipelines from backend...');
       const response = await pipelineAPI.getAll();
+      console.log('Backend response:', response);
+      
       if (response.data && response.data.pipelines) {
+        console.log('Raw pipeline data from backend:', response.data.pipelines);
         const formattedPipelines = response.data.pipelines.map(p => ({
           id: p.id,
           name: p.name,
           stages: p.stages.map(s => s.label),
           isDefault: p.isDefault
         }));
+        console.log('Formatted pipelines:', formattedPipelines);
+        console.log('Setting pipelines state to:', formattedPipelines);
         setPipelines(formattedPipelines);
         
         // Set default pipeline
@@ -35,9 +42,26 @@ export const PipelineProvider = ({ children }) => {
         if (defaultIndex !== -1) {
           setSelectedPipelineIndex(defaultIndex);
         }
+        console.log('=== fetchPipelines completed successfully ===');
+      } else {
+        console.log('No pipeline data in response');
+        // Set default pipeline if no data from backend
+        setPipelines([{
+          id: 1,
+          name: 'Sales Pipeline',
+          stages: ['Initial Contact', 'Discussions', 'Decision Making', 'Contract Discussion', 'Deal - won', 'Deal - lost'],
+          isDefault: true
+        }]);
       }
     } catch (error) {
       console.error('Error fetching pipelines:', error);
+      // Set default pipeline on error
+      setPipelines([{
+        id: 1,
+        name: 'Sales Pipeline',
+        stages: ['Initial Contact', 'Discussions', 'Decision Making', 'Contract Discussion', 'Deal - won', 'Deal - lost'],
+        isDefault: true
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -63,19 +87,7 @@ export const PipelineProvider = ({ children }) => {
     setPipelines(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Get current pipeline stages for Automate
-  const getCurrentPipelineStages = () => {
-    if (pipelines.length === 0 || selectedPipelineIndex >= pipelines.length) {
-      return [];
-    }
-    return pipelines[selectedPipelineIndex].stages.map((stage, index) => ({
-      key: stage.toLowerCase().replace(/ /g, ''),
-      label: stage,
-      hint: null,
-      isDefault: index === 0, // First stage is default
-      hints: { beginner: "", intermediate: "", expert: "" }
-    }));
-  };
+
 
   // Initial fetch
   useEffect(() => {
@@ -92,7 +104,7 @@ export const PipelineProvider = ({ children }) => {
     updatePipeline,
     deletePipeline,
     fetchPipelines,
-    getCurrentPipelineStages
+
   };
 
   return (

@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import './Calendar.css';
 import { FaPhone, FaBriefcase, FaRegClock, FaCalendarAlt, FaPlus, FaSync, FaEllipsisV } from 'react-icons/fa';
 import NewTaskModal from './NewTaskModal';
+import TaskDetailsModal from './TaskDetailsModal';
 import './NewTaskModal.css';
+import './TaskDetailsModal.css';
 import { tasksAPI } from '../services/api';
 
 function getWeekDates(date) {
@@ -102,6 +104,8 @@ const Calendar = () => {
     { placeholder: 'Creator' },
   ];
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showTaskDetailsModal, setShowTaskDetailsModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -144,6 +148,37 @@ const Calendar = () => {
     }
   };
 
+  // Task details handlers
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetailsModal(true);
+  };
+
+  const handleCloseTaskDetails = () => {
+    setShowTaskDetailsModal(false);
+    setSelectedTask(null);
+  };
+
+  const handleEditTask = (task) => {
+    // For now, just close the details modal
+    // You can implement edit functionality later
+    setShowTaskDetailsModal(false);
+    setSelectedTask(null);
+    console.log('Edit task:', task);
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await tasksAPI.delete(taskId);
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      setShowTaskDetailsModal(false);
+      setSelectedTask(null);
+      console.log('Task deleted:', taskId);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
   // Helper function to get tasks for a specific date
   const getTasksForDate = (date) => {
     const dateString = date.toISOString().slice(0, 10);
@@ -152,14 +187,73 @@ const Calendar = () => {
 
   // Helper function to format task display
   const formatTaskDisplay = (task) => {
+    // Determine task type and priority for styling
+    const getTaskTypeClass = () => {
+      if (task.type) {
+        const type = task.type.toLowerCase();
+        if (type.includes('follow') || type.includes('call')) return 'follow-up';
+        if (type.includes('meet') || type.includes('appointment')) return 'meeting';
+        if (type.includes('remind') || type.includes('note')) return 'reminder';
+      }
+      return '';
+    };
+
+    const getPriorityClass = () => {
+      if (task.priority) {
+        const priority = task.priority.toLowerCase();
+        if (priority.includes('high') || priority.includes('urgent')) return 'high-priority';
+        if (priority.includes('medium') || priority.includes('normal')) return 'medium-priority';
+        if (priority.includes('low')) return 'low-priority';
+      }
+      return '';
+    };
+
+    const getStatusClass = () => {
+      if (task.status && task.status.toLowerCase().includes('complete')) return 'completed';
+      return '';
+    };
+
+    const taskClasses = [
+      'calendar-task-item',
+      getTaskTypeClass(),
+      getPriorityClass(),
+      getStatusClass()
+    ].filter(Boolean).join(' ');
+
     return (
-      <div key={task.id} className="calendar-task-item">
-        <div style={{ fontWeight: '600', fontSize: '11px', marginBottom: '2px' }}>
+      <div 
+        key={task.id} 
+        className={taskClasses}
+        onClick={() => handleTaskClick(task)}
+        style={{ cursor: 'pointer' }}
+      >
+        <div style={{ 
+          fontWeight: '700', 
+          fontSize: '12px', 
+          marginBottom: '4px',
+          textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+        }}>
           {task.title}
         </div>
         {task.description && (
-          <div style={{ fontSize: '10px', opacity: 0.8, lineHeight: '1.2' }}>
-            {task.description.length > 20 ? task.description.substring(0, 20) + '...' : task.description}
+          <div style={{ 
+            fontSize: '10px', 
+            opacity: 0.9, 
+            lineHeight: '1.3',
+            textShadow: '0 1px 1px rgba(0,0,0,0.1)'
+          }}>
+            {task.description.length > 25 ? task.description.substring(0, 25) + '...' : task.description}
+          </div>
+        )}
+        {task.due_time && (
+          <div style={{ 
+            fontSize: '9px', 
+            opacity: 0.8, 
+            marginTop: '3px',
+            fontWeight: '500',
+            textShadow: '0 1px 1px rgba(0,0,0,0.1)'
+          }}>
+            ⏰ {task.due_time}
           </div>
         )}
       </div>
@@ -338,26 +432,66 @@ const Calendar = () => {
                       }}>
                         {day.getDate()}
                       </div>
-                      {dayTasks.slice(0, 3).map(task => (
-                        <div key={task.id} className="calendar-task-item" style={{
-                          fontSize: '10px',
-                          marginTop: '2px',
-                          padding: '4px 6px'
-                        }}>
-                          <div style={{ fontWeight: '600', marginBottom: '1px' }}>
-                            {task.title.length > 15 ? task.title.substring(0, 15) + '...' : task.title}
+                      {dayTasks.slice(0, 3).map(task => {
+                        const getTaskTypeClass = () => {
+                          if (task.type) {
+                            const type = task.type.toLowerCase();
+                            if (type.includes('follow') || type.includes('call')) return 'follow-up';
+                            if (type.includes('meet') || type.includes('appointment')) return 'meeting';
+                            if (type.includes('remind') || type.includes('note')) return 'reminder';
+                          }
+                          return '';
+                        };
+
+                        const getPriorityClass = () => {
+                          if (task.priority) {
+                            const priority = task.priority.toLowerCase();
+                            if (priority.includes('high') || priority.includes('urgent')) return 'high-priority';
+                            if (priority.includes('medium') || priority.includes('normal')) return 'medium-priority';
+                            if (priority.includes('low')) return 'low-priority';
+                          }
+                          return '';
+                        };
+
+                        const getStatusClass = () => {
+                          if (task.status && task.status.toLowerCase().includes('complete')) return 'completed';
+                          return '';
+                        };
+
+                        const taskClasses = [
+                          'calendar-task-item',
+                          getTaskTypeClass(),
+                          getPriorityClass(),
+                          getStatusClass()
+                        ].filter(Boolean).join(' ');
+
+                        return (
+                          <div 
+                            key={task.id} 
+                            className={taskClasses} 
+                            style={{
+                              fontSize: '9px',
+                              marginTop: '3px',
+                              padding: '6px 8px',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => handleTaskClick(task)}
+                          >
+                            <div style={{ 
+                              fontWeight: '700', 
+                              marginBottom: '2px',
+                              textShadow: '0 1px 1px rgba(0,0,0,0.1)'
+                            }}>
+                              {task.title.length > 12 ? task.title.substring(0, 12) + '...' : task.title}
+                            </div>
                           </div>
-                          </div>
-                      ))}
+                        );
+                      })}
                       {dayTasks.length > 3 && (
-                        <div style={{
-                          fontSize: '10px',
-                          color: '#6c757d',
-                          marginTop: '2px',
-                          fontStyle: 'italic',
-                          background: 'rgba(255, 255, 255, 0.8)',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
+                        <div className="calendar-task-count" style={{
+                          fontSize: '9px',
+                          marginTop: '4px',
                           display: 'inline-block'
                         }}>
                           +{dayTasks.length - 3} more
@@ -430,6 +564,13 @@ const Calendar = () => {
         </div>
       )}
       <NewTaskModal open={showNewTaskModal} onClose={() => setShowNewTaskModal(false)} onAdd={handleAddTask} />
+      <TaskDetailsModal 
+        task={selectedTask}
+        isOpen={showTaskDetailsModal}
+        onClose={handleCloseTaskDetails}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+      />
     </div>
   );
 };

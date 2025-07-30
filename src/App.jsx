@@ -9,7 +9,7 @@ import Change from './Components/Change';
 import Introduction from './Components/Introduction';
 import Login from './Components/Login';
 import Signup from './Components/Signup';
-import Automate from './Components/Automate';
+
 import Stat from './Components/Stat';
 import ActivityLog from './Components/ActivityLog';
 import Invoice from './Components/Lists';
@@ -208,11 +208,7 @@ function AppLayout() {
               <Interface navigate={navigate} />
             </ProtectedRoute>
           } />
-          <Route path="/leads/automate" element={
-            <ProtectedRoute>
-              <Automate />
-            </ProtectedRoute>
-          } />
+
           <Route path="/calendar" element={
             <ProtectedRoute>
               <Calendar />

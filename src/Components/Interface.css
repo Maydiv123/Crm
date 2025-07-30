@@ -102,14 +102,7 @@ html, body, #root {
 }
 
 .crm-menu-btn {
-  background: none;
-  border: none;
-  font-size: 1.3rem;
-  color: #11344d;
-  cursor: pointer;
-  margin-right: 8px;
-  display: flex;
-  align-items: center;
+  display: none;
 }
 
 .crm-leads-dropdown {
@@ -175,7 +168,7 @@ html, body, #root {
   align-items: center;
 }
 
-.crm-automate-btn, .crm-newlead-btn {
+.crm-newlead-btn {
   background: #1abc9c;
   color: #fff;
   border: none;
@@ -187,7 +180,7 @@ html, body, #root {
   transition: background 0.2s;
 }
 
-.crm-automate-btn:hover, .crm-newlead-btn:hover {
+.crm-newlead-btn:hover {
   background: #159c85;
 }
 
@@ -245,7 +238,7 @@ html, body, #root {
   overflow-x: hidden;
   padding-bottom: 20px;
   min-height: 0;
-  height: calc(100vh - 320px);
+  height: calc(100vh - 360px);
   scrollbar-width: none; /* Hide scrollbar for Firefox */
   position: relative;
 }
@@ -1043,8 +1036,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: unset;
-  height: auto;
+  min-height: 360px;
+  max-height: 400px;
+  height: 360px;
   justify-content: flex-start;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1053,17 +1047,7 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-.crm-lead-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
+
 
 @keyframes shimmer {
   0% { background-position: -200% 0; }
@@ -1090,8 +1074,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: unset;
-  height: auto;
+  min-height: 360px;
+  max-height: 400px;
+  height: 360px;
   justify-content: flex-start;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1100,17 +1085,7 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-.crm-lead-card-modern::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
+
 
 .crm-lead-card-modern:hover {
   transform: translateY(-4px) scale(1.02);
@@ -1130,6 +1105,8 @@ html, body, #root {
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border-bottom: 1px solid #f0f0f0;
   position: relative;
+  flex-shrink: 0;
+  min-height: 80px;
 }
 
 .crm-lead-card-avatar {
@@ -1168,6 +1145,8 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .crm-lead-card-title {
@@ -1180,6 +1159,10 @@ html, body, #root {
   border-radius: 4px;
   padding: 2px 4px;
   margin: -2px -4px 4px -4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .crm-lead-card-title:hover {
@@ -1192,6 +1175,10 @@ html, body, #root {
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .crm-lead-card-status {
@@ -1258,10 +1245,14 @@ html, body, #root {
 }
 
 .crm-lead-card-content {
-  padding: 14px 18px 16px 18px;
+  padding: 14px 18px 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+  overflow: hidden;
 }
 
 .crm-lead-card-row {
@@ -1270,6 +1261,7 @@ html, body, #root {
   align-items: center;
   padding: 6px 0;
   border-bottom: 1px solid #f8f9fa;
+  flex-shrink: 0;
 }
 
 .crm-lead-card-row:last-child {
@@ -1288,6 +1280,10 @@ html, body, #root {
   color: #17404e;
   font-size: 0.9rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
 }
 
 .crm-lead-card-contact {
@@ -1295,6 +1291,10 @@ html, body, #root {
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
 }
 .crm-lead-card-tasks {
   color: #f7b731;
@@ -1305,8 +1305,9 @@ html, body, #root {
 .crm-lead-card-progress {
   display: flex;
   gap: 6px;
-  margin: 12px 0 8px 0;
+  margin: 6px 0 2px 0;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .crm-lead-card-progress-dot {
@@ -1343,9 +1344,15 @@ html, body, #root {
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 12px 0 8px 0;
+  padding: 10px 0 14px 0;
   border-top: 1px solid #f8f9fa;
   margin-top: 8px;
+  flex-shrink: 0;
+
+  position: relative;
+  z-index: 1;
+  min-height: 40px;
+  align-items: center;
 }
 
 .crm-lead-card-action {
@@ -1360,6 +1367,9 @@ html, body, #root {
   transition: all 0.3s ease;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .crm-lead-card-action:hover {
@@ -1732,4 +1742,97 @@ html, body, #root {
   box-shadow: 0 1px 2px rgba(30,60,90,0.08);
   margin-right: 8px;
   cursor: pointer;
+}
+
+/* Contact Modal Styles */
+.crm-contact-modal {
+  min-width: 400px;
+  max-width: 90vw;
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+  background: #fff;
+}
+
+.crm-contact-info {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.crm-contact-info p {
+  margin: 12px 0 8px 0;
+  font-size: 1rem;
+  color: #17404e;
+  line-height: 1.5;
+}
+
+.crm-contact-info strong {
+  color: #1abc9c;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.crm-contact-info .contact-value {
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 200px;
+  font-weight: 500;
+  color: #17404e;
+}
+
+.crm-contact-info .contact-value.highlight {
+  background: #e6f7ec;
+  border-color: #1abc9c;
+  color: #17404e;
+}
+
+.crm-contact-info .contact-value .copy-btn {
+  background: #1abc9c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-left: 8px;
+}
+
+.crm-contact-info .contact-value .copy-btn:hover {
+  background: #159c85;
+}
+
+.crm-contact-info .contact-value .copy-btn.copied {
+  background: #28a745;
+}
+
+.crm-contact-info .contact-value .contact-text {
+  flex: 1;
+  word-break: break-all;
+}
+
+.crm-contact-info .no-data-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+}
+
+.crm-contact-info .no-data-message p {
+  margin: 8px 0;
+  font-size: 1.1rem;
+}
+
+.crm-contact-info .no-data-message p:first-child {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1abc9c;
+  margin-bottom: 16px;
 }

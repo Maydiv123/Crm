@@ -654,6 +654,7 @@
   font-size: 14px;
   color: #2c3e50;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 .calendar-month-cell:last-child {
@@ -685,14 +686,14 @@
 
 /* Task styling improvements */
 .calendar-task-item {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-radius: 8px;
-  border-left: 4px solid #1976d2;
-  margin-bottom: 6px;
-  padding: 8px 10px;
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  border: none;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
   font-size: 12px;
-  color: #1976d2;
+  color: #ffffff;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -700,6 +701,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .calendar-task-item::before {
@@ -709,8 +712,8 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
 }
 
 .calendar-task-item:hover::before {
@@ -718,14 +721,161 @@
 }
 
 .calendar-task-item:hover {
-  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .calendar-task-item b {
   font-weight: 700;
-  color: #1565c0;
+  color: #ffffff;
+}
+
+/* Task priority indicators */
+.calendar-task-item.high-priority {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  border-left: 4px solid #ff4757;
+}
+
+.calendar-task-item.high-priority:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+}
+
+.calendar-task-item.medium-priority {
+  background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
+  border-left: 4px solid #ff8f00;
+}
+
+.calendar-task-item.medium-priority:hover {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  box-shadow: 0 8px 24px rgba(255, 167, 38, 0.4);
+}
+
+.calendar-task-item.low-priority {
+  background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+  border-left: 4px solid #388e3c;
+}
+
+.calendar-task-item.low-priority:hover {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
+}
+
+/* Task status indicators */
+.calendar-task-item.completed {
+  background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+  border-left: 4px solid #616161;
+  opacity: 0.8;
+}
+
+.calendar-task-item.completed:hover {
+  background: linear-gradient(135deg, #757575 0%, #616161 100%);
+  box-shadow: 0 8px 24px rgba(158, 158, 158, 0.4);
+}
+
+/* Task type indicators */
+.calendar-task-item.follow-up {
+  background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);
+  border-left: 4px solid #1565c0;
+}
+
+.calendar-task-item.follow-up:hover {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  box-shadow: 0 8px 24px rgba(66, 165, 245, 0.4);
+}
+
+.calendar-task-item.meeting {
+  background: linear-gradient(135deg, #ab47bc 0%, #8e24aa 100%);
+  border-left: 4px solid #7b1fa2;
+}
+
+.calendar-task-item.meeting:hover {
+  background: linear-gradient(135deg, #8e24aa 0%, #7b1fa2 100%);
+  box-shadow: 0 8px 24px rgba(171, 71, 188, 0.4);
+}
+
+.calendar-task-item.reminder {
+  background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
+  border-left: 4px solid #00695c;
+}
+
+.calendar-task-item.reminder:hover {
+  background: linear-gradient(135deg, #00897b 0%, #00695c 100%);
+  box-shadow: 0 8px 24px rgba(38, 166, 154, 0.4);
+}
+
+/* Task animation and additional styling */
+.calendar-task-item {
+  animation: taskSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes taskSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Task count indicator styling */
+.calendar-task-count {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Empty state styling */
+.calendar-empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Task hover effects for better interaction */
+.calendar-task-item:active {
+  transform: translateY(-1px) scale(0.98);
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Clickable task indicators */
+.calendar-task-item {
+  position: relative;
+}
+
+.calendar-task-item::after {
+  content: '👆';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.calendar-task-item:hover::after {
+  opacity: 1;
+}
+
+/* Task click feedback */
+.calendar-task-item:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
 }
 
 /* Menu dropdown improvements */
