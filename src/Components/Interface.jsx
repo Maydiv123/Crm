@@ -389,6 +389,13 @@ export default function Interface({ onSidebarNav, navigate }) {
   const [contactModalData, setContactModalData] = useState(null);
   const [contactModalType, setContactModalType] = useState(''); // 'call', 'email'
   const [pipelineUpdateTrigger, setPipelineUpdateTrigger] = useState(0); // Add this to force re-renders
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showFindDuplicatesModal, setShowFindDuplicatesModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [duplicates, setDuplicates] = useState([]);
+  const [exportFormat, setExportFormat] = useState('csv');
 
   // Function to detect overflow and add scroll indicators
   const checkPipelineOverflow = () => {
@@ -923,6 +930,224 @@ export default function Interface({ onSidebarNav, navigate }) {
     }
   };
 
+  // Print functionality
+  const handlePrint = () => {
+    const printContent = document.createElement('div');
+    printContent.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1>${pipelines[selectedPipelineIndex].name} - Lead Report</h1>
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Name</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Company</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Stage</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Value</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Contact</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leads.map(lead => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${lead.contactName || lead.name || 'N/A'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${lead.companyName || 'N/A'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${lead.stage || 'N/A'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">₹${lead.amount || 0}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${lead.contactPhone || lead.contactEmail || 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent.innerHTML);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Export functionality
+  const handleExport = () => {
+    setShowExportModal(true);
+  };
+
+  const handleExportData = () => {
+    const currentLeads = leads.filter(lead => {
+      const leadPipeline = (lead.pipeline || '').toLowerCase();
+      const currentPipeline = (pipelines[selectedPipelineIndex].name || '').toLowerCase();
+      return leadPipeline === currentPipeline;
+    });
+
+    if (exportFormat === 'csv') {
+      const headers = ['Name', 'Company', 'Stage', 'Value', 'Phone', 'Email', 'Address'];
+      const csvContent = [
+        headers.join(','),
+        ...currentLeads.map(lead => [
+          `"${(lead.contactName || lead.name || '').replace(/"/g, '""')}"`,
+          `"${(lead.companyName || '').replace(/"/g, '""')}"`,
+          `"${(lead.stage || '').replace(/"/g, '""')}"`,
+          lead.amount || 0,
+          `"${(lead.contactPhone || '').replace(/"/g, '""')}"`,
+          `"${(lead.contactEmail || '').replace(/"/g, '""')}"`,
+          `"${(lead.companyAddress || '').replace(/"/g, '""')}"`
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${pipelines[selectedPipelineIndex].name}_leads_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else if (exportFormat === 'json') {
+      const jsonContent = JSON.stringify(currentLeads, null, 2);
+      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${pipelines[selectedPipelineIndex].name}_leads_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+    setShowExportModal(false);
+  };
+
+  // Import functionality
+  const handleImport = () => {
+    setShowImportModal(true);
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    setImportFile(file);
+  };
+
+  const handleImportData = async () => {
+    if (!importFile) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target.result;
+        let importedLeads = [];
+
+        if (importFile.name.endsWith('.csv')) {
+          const lines = content.split('\n');
+          const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+          
+          for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim()) {
+              const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+              const lead = {};
+              headers.forEach((header, index) => {
+                lead[header.toLowerCase().replace(/\s+/g, '')] = values[index] || '';
+              });
+              importedLeads.push(lead);
+            }
+            setImportProgress((i / (lines.length - 1)) * 100);
+          }
+        } else if (importFile.name.endsWith('.json')) {
+          importedLeads = JSON.parse(content);
+          setImportProgress(100);
+        }
+
+        // Process imported leads
+        for (const lead of importedLeads) {
+          try {
+            const mappedLead = {
+              name: lead.name || lead.contactname || '',
+              contactName: lead.contactname || lead.name || '',
+              contactPhone: lead.phone || lead.contactphone || '',
+              contactEmail: lead.email || lead.contactemail || '',
+              companyName: lead.company || lead.companyname || '',
+              companyAddress: lead.address || lead.companyaddress || '',
+              amount: lead.value || lead.amount || 0,
+              stage: lead.stage || pipelines[selectedPipelineIndex].stages[0],
+              pipeline: pipelines[selectedPipelineIndex].name
+            };
+
+            await leadsAPI.create(mappedLead);
+          } catch (error) {
+            console.error('Error importing lead:', error);
+          }
+        }
+
+        // Refresh leads
+        const response = await leadsAPI.getAll();
+        if (response.data && response.data.leads) {
+          setLeads(response.data.leads);
+        }
+
+        setShowImportModal(false);
+        setImportFile(null);
+        setImportProgress(0);
+        alert(`Successfully imported ${importedLeads.length} leads!`);
+      } catch (error) {
+        console.error('Error processing import:', error);
+        alert('Error importing file. Please check the file format.');
+      }
+    };
+    reader.readAsText(importFile);
+  };
+
+  // Find duplicates functionality
+  const handleFindDuplicates = () => {
+    setShowFindDuplicatesModal(true);
+    
+    // Find duplicates based on email, phone, or name
+    const duplicatesFound = [];
+    const seen = new Map();
+
+    leads.forEach(lead => {
+      const key = lead.contactEmail || lead.contactPhone || lead.contactName;
+      if (key && seen.has(key)) {
+        duplicatesFound.push([seen.get(key), lead]);
+      } else if (key) {
+        seen.set(key, lead);
+      }
+    });
+
+    setDuplicates(duplicatesFound);
+  };
+
+  const handleMergeDuplicates = async (originalLead, duplicateLead) => {
+    try {
+      // Merge duplicate into original
+      const mergedLead = {
+        ...originalLead,
+        contactName: originalLead.contactName || duplicateLead.contactName,
+        contactPhone: originalLead.contactPhone || duplicateLead.contactPhone,
+        contactEmail: originalLead.contactEmail || duplicateLead.contactEmail,
+        companyName: originalLead.companyName || duplicateLead.companyName,
+        companyAddress: originalLead.companyAddress || duplicateLead.companyAddress,
+        amount: Math.max(originalLead.amount || 0, duplicateLead.amount || 0)
+      };
+
+      // Update original lead
+      await leadsAPI.update(originalLead.id, mergedLead);
+      
+      // Delete duplicate lead
+      await leadsAPI.delete(duplicateLead.id);
+      
+      // Refresh leads
+      const response = await leadsAPI.getAll();
+      if (response.data && response.data.leads) {
+        setLeads(response.data.leads);
+      }
+      
+      // Remove from duplicates list
+      setDuplicates(duplicates.filter(d => d[0].id !== originalLead.id || d[1].id !== duplicateLead.id));
+      
+      alert('Duplicates merged successfully!');
+    } catch (error) {
+      console.error('Error merging duplicates:', error);
+      alert('Error merging duplicates. Please try again.');
+    }
+  };
+
   // On mount, restore selected pipeline from localStorage if available
   useEffect(() => {
     const savedName = localStorage.getItem('selectedPipelineName');
@@ -1356,13 +1581,12 @@ export default function Interface({ onSidebarNav, navigate }) {
               <button className="crm-dotmenu-btn" onClick={handleDotMenuClick}><FaEllipsisV /></button>
               {showDotMenu && (
                 <div className="crm-dotmenu-dropdown">
-                  <div className="crm-dotmenu-item"><FaBroadcastTower className="crm-dotmenu-icon" /> New broadcast</div>
                   <div className="crm-dotmenu-item" onClick={() => setShowEditPipeline(true)}><FaEdit className="crm-dotmenu-icon" /> Edit pipeline</div>
-                  <div className="crm-dotmenu-item"><FaPrint className="crm-dotmenu-icon" /> Print</div>
+                  <div className="crm-dotmenu-item" onClick={handlePrint}><FaPrint className="crm-dotmenu-icon" /> Print</div>
                   <div className="crm-dotmenu-item" onClick={() => setShowListSettings(true)}><FaCogs className="crm-dotmenu-icon" /> Invoice settings</div>
-                  <div className="crm-dotmenu-item"><FaArrowDown className="crm-dotmenu-icon" /> Import</div>
-                  <div className="crm-dotmenu-item"><FaArrowUp className="crm-dotmenu-icon" /> Export</div>
-                  <div className="crm-dotmenu-item"><FaClone className="crm-dotmenu-icon" /> Find duplicates</div>
+                  <div className="crm-dotmenu-item" onClick={handleImport}><FaArrowDown className="crm-dotmenu-icon" /> Import</div>
+                  <div className="crm-dotmenu-item" onClick={handleExport}><FaArrowUp className="crm-dotmenu-icon" /> Export</div>
+                  <div className="crm-dotmenu-item" onClick={handleFindDuplicates}><FaClone className="crm-dotmenu-icon" /> Find duplicates</div>
                 </div>
               )}
             </div>
@@ -1702,6 +1926,172 @@ export default function Interface({ onSidebarNav, navigate }) {
             </div>
             <div className="crm-modal-actions">
               <button className="crm-modal-save" onClick={handleCloseContactModal}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="crm-modal-overlay">
+          <div className="crm-modal crm-reassign-modal" style={{minWidth: '500px', maxWidth: '95vw', padding: '32px 28px 24px 28px'}}>
+            <button className="crm-modal-close" onClick={() => { setShowImportModal(false); setImportFile(null); setImportProgress(0); }}>×</button>
+            <div className="crm-modal-title" style={{marginBottom:18}}>Import Leads</div>
+            <div style={{marginBottom:18}}>
+              <p style={{color:'#fff', marginBottom:12}}>Select a CSV or JSON file to import leads:</p>
+              <input
+                type="file"
+                accept=".csv,.json"
+                onChange={handleFileSelect}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '2px dashed #1abc9c',
+                  borderRadius: '8px',
+                  background: '#17404e',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              />
+              {importFile && (
+                <div style={{marginTop:12, color:'#1abc9c', fontSize:'0.9rem'}}>
+                  Selected: {importFile.name}
+                </div>
+              )}
+              {importProgress > 0 && (
+                <div style={{marginTop:12}}>
+                  <div style={{color:'#fff', marginBottom:6}}>Importing... {Math.round(importProgress)}%</div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    background: '#22303c',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${importProgress}%`,
+                      height: '100%',
+                      background: '#1abc9c',
+                      transition: 'width 0.3s ease'
+                    }}></div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="crm-modal-actions">
+              <button 
+                className="crm-modal-save" 
+                onClick={handleImportData}
+                disabled={!importFile}
+                style={{opacity: importFile ? 1 : 0.5, cursor: importFile ? 'pointer' : 'not-allowed'}}
+              >
+                Import
+              </button>
+              <button className="crm-modal-cancel" onClick={() => { setShowImportModal(false); setImportFile(null); setImportProgress(0); }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="crm-modal-overlay">
+          <div className="crm-modal crm-reassign-modal" style={{minWidth: '400px', maxWidth: '95vw', padding: '32px 28px 24px 28px'}}>
+            <button className="crm-modal-close" onClick={() => setShowExportModal(false)}>×</button>
+            <div className="crm-modal-title" style={{marginBottom:18}}>Export Leads</div>
+            <div style={{marginBottom:18}}>
+              <p style={{color:'#fff', marginBottom:12}}>Choose export format:</p>
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value)}
+                className="crm-modal-input"
+                style={{marginBottom:12}}
+              >
+                <option value="csv">CSV (Excel compatible)</option>
+                <option value="json">JSON (Data format)</option>
+              </select>
+              <div style={{color:'#bfc5c9', fontSize:'0.9rem'}}>
+                Exporting {leads.filter(lead => {
+                  const leadPipeline = (lead.pipeline || '').toLowerCase();
+                  const currentPipeline = (pipelines[selectedPipelineIndex].name || '').toLowerCase();
+                  return leadPipeline === currentPipeline;
+                }).length} leads from {pipelines[selectedPipelineIndex].name}
+              </div>
+            </div>
+            <div className="crm-modal-actions">
+              <button className="crm-modal-save" onClick={handleExportData}>Export</button>
+              <button className="crm-modal-cancel" onClick={() => setShowExportModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Find Duplicates Modal */}
+      {showFindDuplicatesModal && (
+        <div className="crm-modal-overlay">
+          <div className="crm-modal crm-reassign-modal" style={{minWidth: '600px', maxWidth: '95vw', padding: '32px 28px 24px 28px', maxHeight: '80vh', overflow: 'auto'}}>
+            <button className="crm-modal-close" onClick={() => setShowFindDuplicatesModal(false)}>×</button>
+            <div className="crm-modal-title" style={{marginBottom:18}}>Find Duplicates</div>
+            <div style={{marginBottom:18}}>
+              {duplicates.length === 0 ? (
+                <div style={{color:'#1abc9c', textAlign:'center', padding:'20px'}}>
+                  🎉 No duplicates found! Your data is clean.
+                </div>
+              ) : (
+                <div>
+                  <p style={{color:'#fff', marginBottom:12}}>Found {duplicates.length} duplicate pairs:</p>
+                  {duplicates.map(([original, duplicate], index) => (
+                    <div key={index} style={{
+                      border: '1px solid #22303c',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      marginBottom: '12px',
+                      background: '#17404e'
+                    }}>
+                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
+                        <span style={{color:'#1abc9c', fontWeight:600}}>Duplicate Pair #{index + 1}</span>
+                        <button
+                          onClick={() => handleMergeDuplicates(original, duplicate)}
+                          style={{
+                            background: '#1abc9c',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '6px 12px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          Merge
+                        </button>
+                      </div>
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
+                        <div>
+                          <div style={{color:'#1abc9c', fontWeight:600, marginBottom:4}}>Original Lead</div>
+                          <div style={{color:'#fff', fontSize:'0.9rem'}}>
+                            <div>Name: {original.contactName || original.name || 'N/A'}</div>
+                            <div>Email: {original.contactEmail || 'N/A'}</div>
+                            <div>Phone: {original.contactPhone || 'N/A'}</div>
+                            <div>Company: {original.companyName || 'N/A'}</div>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{color:'#e74c3c', fontWeight:600, marginBottom:4}}>Duplicate Lead</div>
+                          <div style={{color:'#fff', fontSize:'0.9rem'}}>
+                            <div>Name: {duplicate.contactName || duplicate.name || 'N/A'}</div>
+                            <div>Email: {duplicate.contactEmail || 'N/A'}</div>
+                            <div>Phone: {duplicate.contactPhone || 'N/A'}</div>
+                            <div>Company: {duplicate.companyName || 'N/A'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="crm-modal-actions">
+              <button className="crm-modal-cancel" onClick={() => setShowFindDuplicatesModal(false)}>Close</button>
             </div>
           </div>
         </div>

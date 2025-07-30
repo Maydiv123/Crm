@@ -150,6 +150,8 @@ export default function Mail() {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLeadsDropdown, setShowLeadsDropdown] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const suggestionBoxRef = useRef(null);
 
   // Fetch emails from database
@@ -301,6 +303,16 @@ export default function Mail() {
     setSelectedRecipients([]);
     setForm({ ...form, to: '' });
     console.log('Bulk mode toggled to:', !showBulkMode);
+  };
+
+  const handleMinimize = () => {
+    setIsMinimized(!isMinimized);
+    setIsMaximized(false);
+  };
+
+  const handleMaximize = () => {
+    setIsMaximized(!isMaximized);
+    setIsMinimized(false);
   };
 
   const handleChange = (e) => {
@@ -953,16 +965,47 @@ export default function Mail() {
 
       {/* Compose Modal */}
       {showCompose && (
-        <div className="gmail-compose-modal">
+        <div className={`gmail-compose-modal ${isMinimized ? 'minimized' : ''} ${isMaximized ? 'maximized' : ''}`}>
           <div className="gmail-compose-header">
-            <span>New Message</span>
+            <div className="gmail-compose-title" onClick={isMinimized ? handleMinimize : undefined}>
+              <svg width="20" height="20" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+                <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+              </svg>
+              <span>New Message</span>
+            </div>
             <div className="gmail-compose-actions">
-             
-              <button onClick={() => {
-                setShowCompose(false);
-                setShowLeadsDropdown(false);
-              }}>
-                <svg width="20" height="20" viewBox="0 0 24 24">
+              <button 
+                className="gmail-compose-minimize"
+                title="Minimize"
+                onClick={handleMinimize}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M19 13H5v-2h14v2z"/>
+                </svg>
+              </button>
+              <button 
+                className="gmail-compose-maximize"
+                title={isMaximized ? "Restore" : "Maximize"}
+                onClick={handleMaximize}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                  <path fill="currentColor" d={isMaximized ? "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" : "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"}/>
+                </svg>
+              </button>
+              <button 
+                className="gmail-compose-close"
+                title="Close"
+                onClick={() => {
+                  setShowCompose(false);
+                  setShowLeadsDropdown(false);
+                  setForm({ to: '', subject: '', message: '' });
+                  setSelectedRecipients([]);
+                  setShowBulkMode(false);
+                  setIsMinimized(false);
+                  setIsMaximized(false);
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                 </svg>
               </button>
@@ -1273,9 +1316,11 @@ export default function Mail() {
                 onChange={handleChange}
                 required
                 placeholder="Subject"
+                className="gmail-compose-input"
               />
             </div>
-            <div className="gmail-compose-field">
+            <div className="gmail-compose-field message-field">
+              <label>Message:</label>
               <textarea
                 name="message"
                 value={form.message}
@@ -1283,18 +1328,46 @@ export default function Mail() {
                 required
                 placeholder="Write your message..."
                 rows={12}
+                className="gmail-compose-textarea"
               />
             </div>
             <div className="gmail-compose-footer">
-              <button type="submit" disabled={sending}>
-                {sending ? 'Sending...' : showBulkMode ? `Send to ${selectedRecipients.length} recipient(s)` : 'Send'}
-              </button>
-              <button type="button" onClick={() => {
-                setShowCompose(false);
-                setShowLeadsDropdown(false);
-              }}>
-                Discard
-              </button>
+              <div className="gmail-compose-footer-left">
+                <button type="submit" className="gmail-compose-send-btn" disabled={sending}>
+                  {sending ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" className="gmail-spinner">
+                        <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8z"/>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                      {showBulkMode ? `Send to ${selectedRecipients.length} recipient(s)` : 'Send'}
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="gmail-compose-footer-right">
+                <button 
+                  type="button" 
+                  className="gmail-compose-discard-btn"
+                  onClick={() => {
+                    setShowCompose(false);
+                    setShowLeadsDropdown(false);
+                    setForm({ to: '', subject: '', message: '' });
+                    setSelectedRecipients([]);
+                    setShowBulkMode(false);
+                    setIsMinimized(false);
+                    setIsMaximized(false);
+                  }}
+                >
+                  Discard
+                </button>
+              </div>
             </div>
           </form>
         </div>
