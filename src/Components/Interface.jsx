@@ -1648,15 +1648,19 @@ export default function Interface({ onSidebarNav, navigate }) {
                 return leadStage === pipelineStage && leadPipeline === currentPipeline;
               }).map((lead, i) => (
                 <div
-                  className="crm-lead-card crm-lead-card-modern"
+                  className="crm-lead-card crm-lead-card-compact"
                   key={i}
-                  style={{position:'relative'}}
+                  style={{position:'relative', padding: '2px 6px', marginBottom: '2px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '3px', cursor: 'pointer', maxWidth: '201px'}}
+                  onClick={() => {
+                    setSelectedLead(lead);
+                    setShowLeadDetail(true);
+                  }}
                 >
                   {showListSettings && (
                     <input
                       type="checkbox"
                       className="crm-lead-select-checkbox"
-                      style={{position: 'absolute', top: 12, left: 12, zIndex: 2}}
+                      style={{position: 'absolute', top: 2, left: 2, zIndex: 2}}
                       checked={selectedLeadIds.includes(lead.id)}
                       onChange={e => {
                         setSelectedLeadIds(ids =>
@@ -1669,120 +1673,29 @@ export default function Interface({ onSidebarNav, navigate }) {
                   )}
                   
                   {/* Priority Indicator */}
-                  <div className={`crm-lead-card-priority crm-lead-card-priority-${lead.priority || 'low'}`}></div>
+                  <div className={`crm-lead-card-priority crm-lead-card-priority-${lead.priority || 'low'}`} style={{position: 'absolute', top: 2, right: 2, width: '3px', height: '3px', borderRadius: '50%'}}></div>
                   
                   {/* Badge for new leads */}
                   {lead.createdAt && new Date(lead.createdAt) > new Date(Date.now() - 24*60*60*1000) && (
-                    <div className="crm-lead-card-badge">New</div>
+                    <div style={{position: 'absolute', top: -1, left: -1, background: '#1abc9c', color: 'white', fontSize: '7px', padding: '0px 2px', borderRadius: '4px', fontWeight: 'bold'}}>New</div>
                   )}
                   
-                  <div className="crm-lead-card-header">
-                    <div className="crm-lead-card-avatar">{lead.contactName ? lead.contactName[0].toUpperCase() : 'L'}</div>
-                    <div className="crm-lead-card-maininfo">
-                      <div 
-                        className="crm-lead-card-title"
-                        style={{cursor:'pointer'}}
-                        onClick={() => {
-                          setSelectedLead(lead);
-                          setShowLeadDetail(true);
-                        }}
-                      >
+                  <div style={{display: 'flex', alignItems: 'center', gap: '3px'}}>
+                    <div style={{width: '14px', height: '14px', borderRadius: '50%', background: '#1abc9c', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 'bold', flexShrink: 0}}>
+                      {lead.contactName ? lead.contactName[0].toUpperCase() : 'L'}
+                    </div>
+                    <div style={{flex: 1, minWidth: 0}}>
+                      <div style={{fontWeight: '600', fontSize: '11px', color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.0'}}>
                         {lead.contactName || lead.name || lead.company || 'No Name'}
                       </div>
-                      <div className="crm-lead-card-company">{lead.companyName || 'No Company'}</div>
-                    </div>
-                    <div className="crm-lead-card-status crm-lead-card-status-new">New</div>
-                  </div>
-                  <div className="crm-lead-card-content">
-                  <div className="crm-lead-card-row">
-                      <span className="crm-lead-card-label">Value:</span> <span className="crm-lead-card-value">{getDotData(lead, activeDotIndex[lead.id] || 0).value}</span>
-                  </div>
-                  <div className="crm-lead-card-row">
-                      <span className="crm-lead-card-label">Contact:</span> <span className="crm-lead-card-contact">{getDotData(lead, activeDotIndex[lead.id] || 0).contact}</span>
-                  </div>
-                    <div className="crm-lead-card-row">
-                      <span className="crm-lead-card-label">Status:</span> <span className="crm-lead-card-value" style={{color: '#1abc9c', fontSize: '0.8rem'}}>{getDotData(lead, activeDotIndex[lead.id] || 0).status}</span>
-                    </div>
-                    <div className="crm-lead-card-progress" style={{display: 'flex', gap: '6px', margin: '12px 0 8px 0', justifyContent: 'center'}}>
-                      <div 
-                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 0 ? 'crm-lead-card-progress-dot-active' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveDotIndex(prev => ({
-                            ...prev,
-                            [lead.id]: 0
-                          }));
-                        }}
-                        title="Stage 1: Initial Contact"
-                        style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: (activeDotIndex[lead.id] || 0) === 0 ? '#1abc9c' : '#e9ecef',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      />
-                      <div 
-                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 1 ? 'crm-lead-card-progress-dot-active' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveDotIndex(prev => ({
-                            ...prev,
-                            [lead.id]: 1
-                          }));
-                        }}
-                        title="Stage 2: Discussion"
-                        style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: (activeDotIndex[lead.id] || 0) === 1 ? '#1abc9c' : '#e9ecef',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      />
-                      <div 
-                        className={`crm-lead-card-progress-dot ${(activeDotIndex[lead.id] || 0) === 2 ? 'crm-lead-card-progress-dot-active' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveDotIndex(prev => ({
-                            ...prev,
-                            [lead.id]: 2
-                          }));
-                        }}
-                        title="Stage 3: Contract"
-                        style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: (activeDotIndex[lead.id] || 0) === 2 ? '#1abc9c' : '#e9ecef',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      />
-                  </div>
-                  <div className="crm-lead-card-actions">
-                      <span 
-                        title="Call" 
-                        className="crm-lead-card-action"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCallClick(lead);
-                        }}
-                      >
-                        📞
-                      </span>
-                      <span 
-                        title="Email" 
-                        className="crm-lead-card-action"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEmailClick(lead);
-                        }}
-                      >
-                        ✉️
-                      </span>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0px'}}>
+                        <div style={{fontSize: '9px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '50%'}}>
+                          {lead.companyName || 'No Company'}
+                        </div>
+                        <div style={{fontSize: '9px', color: '#1abc9c', fontWeight: '600', marginLeft: '1px'}}>
+                          {getDotData(lead, activeDotIndex[lead.id] || 0).value}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

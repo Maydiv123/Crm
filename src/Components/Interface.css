@@ -1036,9 +1036,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 360px;
-  max-height: 400px;
-  height: 360px;
+  min-height: 20px;
+  max-height: 49px;
+  height: 110px;
   justify-content: flex-start;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1835,4 +1835,19 @@ html, body, #root {
   font-weight: 600;
   color: #1abc9c;
   margin-bottom: 16px;
+}
+
+/* Compact Lead Card Styles */
+.crm-lead-card-compact {
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.crm-lead-card-compact:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+.crm-lead-card-compact:active {
+  transform: scale(0.98);
 }

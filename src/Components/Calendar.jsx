@@ -307,10 +307,7 @@ const Calendar = () => {
               </div>
             )}
           </div>
-          <button className="calendar-new-task-btn" onClick={() => { setShowNewTaskModal(true); console.log('Button clicked, modal should open'); }}>
-            <FaPlus style={{ marginRight: '6px' }} />
-            NEW TASK
-          </button>
+
         </div>
       </div>
       {tab === 'week' ? (

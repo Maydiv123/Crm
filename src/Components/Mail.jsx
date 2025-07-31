@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Mail.css';
+import MulIcon from '../assets/Mul.png';
 
 // Fallback data in case backend is not running
 const fallbackInbox = [
@@ -939,9 +940,7 @@ export default function Mail() {
             onClick={() => setShowGroupsModal(true)}
             style={{ marginRight: '12px', background: '#34a853' }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-1.7 2.26A6.44 6.44 0 0 0 12 10c-2.21 0-4 1.79-4 4v2h-2v6h2v2h12v-2h2z"/>
-            </svg>
+            <img src={MulIcon} alt="Groups" style={{ width: '20px', height: '20px' }} />
             <span>Groups</span>
           </button>
          
