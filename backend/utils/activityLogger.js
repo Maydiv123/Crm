@@ -307,6 +307,46 @@ export const activityLogger = {
     } catch (error) {
       console.error('Error logging system activity:', error);
     }
+  },
+
+  // Generic activity logger for any object type
+  logActivity: async (activityData) => {
+    try {
+      const {
+        user_id,
+        object_type,
+        object_id,
+        object_name,
+        event_type,
+        event_description,
+        impact = 'neutral',
+        priority = 'medium'
+      } = activityData;
+
+      const query = `
+        INSERT INTO activity_logs 
+        (user_id, object_type, object_id, object_name, event_type, event_description, value_before, value_after, impact, priority)
+        VALUES (?, ?, ?, ?, ?, ?, '[]', ?, ?, ?)
+      `;
+      
+      const valueAfter = JSON.stringify([
+        { type: "Status", value: "Completed", color: "green" }
+      ]);
+      
+      await pool.execute(query, [
+        user_id,
+        object_type,
+        object_id,
+        object_name,
+        event_type,
+        event_description,
+        valueAfter,
+        impact,
+        priority
+      ]);
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
   }
 };
 

@@ -150,9 +150,16 @@ export default function Mail() {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLeadsDropdown, setShowLeadsDropdown] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
   const suggestionBoxRef = useRef(null);
+  
+  // User Groups State
+  const [showGroupsModal, setShowGroupsModal] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [selectedGroupEmails, setSelectedGroupEmails] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
   // Fetch emails from database
   const fetchEmails = async () => {
@@ -216,15 +223,65 @@ export default function Mail() {
           console.log('✅ Real emails loaded from database:', data.emails);
           setAllLeadEmails(data.emails);
         } else {
-          console.log('⚠️ No emails found in database');
-          setAllLeadEmails([]);
+          console.log('⚠️ No emails found in database, using fallback data');
+          // Use fallback data for testing
+          setAllLeadEmails([
+            'john.doe@example.com',
+            'jane.smith@example.com',
+            'mike.wilson@example.com',
+            'sarah.jones@example.com',
+            'david.brown@example.com'
+          ]);
         }
       })
       .catch(err => {
-        console.log('❌ API failed, no emails available');
-        setAllLeadEmails([]);
+        console.log('❌ API failed, using fallback data');
+        // Use fallback data for testing
+        setAllLeadEmails([
+          'john.doe@example.com',
+          'jane.smith@example.com',
+          'mike.wilson@example.com',
+          'sarah.jones@example.com',
+          'david.brown@example.com'
+        ]);
       });
   }, []);
+
+  // Fetch groups from API
+  const fetchGroups = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, cannot fetch groups');
+        return;
+      }
+
+      setLoadingGroups(true);
+      const response = await fetch('/api/groups', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data.groups || []);
+      } else {
+        console.log('Failed to fetch groups');
+        setGroups([]);
+      }
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      setGroups([]);
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Fetch groups on mount and when modal opens
+  useEffect(() => {
+    if (showGroupsModal) {
+      fetchGroups();
+    }
+  }, [showGroupsModal]);
 
   // Fetch emails on mount
   useEffect(() => {
@@ -242,6 +299,8 @@ export default function Mail() {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+
 
 
 
@@ -305,15 +364,7 @@ export default function Mail() {
     console.log('Bulk mode toggled to:', !showBulkMode);
   };
 
-  const handleMinimize = () => {
-    setIsMinimized(!isMinimized);
-    setIsMaximized(false);
-  };
 
-  const handleMaximize = () => {
-    setIsMaximized(!isMaximized);
-    setIsMinimized(false);
-  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -740,6 +791,109 @@ export default function Mail() {
 
   const currentEmails = tab === 'inbox' ? filteredInbox : tab === 'sent' ? filteredSent : filteredTrash;
 
+  // User Groups Functions
+  const createGroup = async () => {
+    if (!newGroupName.trim() || selectedGroupEmails.length === 0) {
+      setError('Please enter a group name and select at least one email.');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to create groups.');
+        return;
+      }
+
+      const response = await fetch('/api/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newGroupName.trim(),
+          emails: selectedGroupEmails
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNewGroupName('');
+        setSelectedGroupEmails([]);
+        setSuccess(`Group "${data.group.name}" created with ${data.group.emails.length} members!`);
+        // Refresh groups list
+        fetchGroups();
+      } else {
+        setError(data.message || 'Failed to create group');
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      setError('Failed to create group. Please try again.');
+    }
+  };
+
+  const deleteGroup = async (groupId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to delete groups.');
+        return;
+      }
+
+      const response = await fetch(`/api/groups/${groupId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (selectedGroup && selectedGroup.id === groupId) {
+          setSelectedGroup(null);
+        }
+        setSuccess('Group deleted successfully!');
+        // Refresh groups list
+        fetchGroups();
+      } else {
+        setError(data.message || 'Failed to delete group');
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      setError('Failed to delete group. Please try again.');
+    }
+  };
+
+  const selectGroup = (group) => {
+    setSelectedGroup(group);
+    setSelectedRecipients([...group.emails]);
+    setShowGroupDropdown(false);
+    setSuccess(`Group "${group.name}" selected with ${group.emails.length} members!`);
+  };
+
+  const mailGroup = (group) => {
+    setSelectedRecipients([...group.emails]);
+    setShowBulkMode(true);
+    setShowCompose(true);
+    setShowGroupsModal(false);
+    setSuccess(`Opened compose for group "${group.name}" with ${group.emails.length} members!`);
+  };
+
+  const toggleGroupEmail = (email) => {
+    setSelectedGroupEmails(prev => {
+      const isCurrentlySelected = prev.includes(email);
+      const newSelection = isCurrentlySelected
+        ? prev.filter(e => e !== email)
+        : [...prev, email];
+      return newSelection;
+    });
+  };
+
+
+
   return (
     <div className="gmail-container">
       {/* Header */}
@@ -780,7 +934,16 @@ export default function Mail() {
           </div>
         </div>
         <div className="gmail-header-right">
-          
+          <button 
+            className="gmail-compose-btn" 
+            onClick={() => setShowGroupsModal(true)}
+            style={{ marginRight: '12px', background: '#34a853' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-1.7 2.26A6.44 6.44 0 0 0 12 10c-2.21 0-4 1.79-4 4v2h-2v6h2v2h12v-2h2z"/>
+            </svg>
+            <span>Groups</span>
+          </button>
          
           <button className="gmail-compose-btn" onClick={() => setShowCompose(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24">
@@ -965,33 +1128,15 @@ export default function Mail() {
 
       {/* Compose Modal */}
       {showCompose && (
-        <div className={`gmail-compose-modal ${isMinimized ? 'minimized' : ''} ${isMaximized ? 'maximized' : ''}`}>
+        <div className="gmail-compose-modal">
           <div className="gmail-compose-header">
-            <div className="gmail-compose-title" onClick={isMinimized ? handleMinimize : undefined}>
+            <div className="gmail-compose-title">
               <svg width="20" height="20" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
                 <path fill="currentColor" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
               </svg>
               <span>New Message</span>
             </div>
             <div className="gmail-compose-actions">
-              <button 
-                className="gmail-compose-minimize"
-                title="Minimize"
-                onClick={handleMinimize}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M19 13H5v-2h14v2z"/>
-                </svg>
-              </button>
-              <button 
-                className="gmail-compose-maximize"
-                title={isMaximized ? "Restore" : "Maximize"}
-                onClick={handleMaximize}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24">
-                  <path fill="currentColor" d={isMaximized ? "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" : "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"}/>
-                </svg>
-              </button>
               <button 
                 className="gmail-compose-close"
                 title="Close"
@@ -1001,8 +1146,6 @@ export default function Mail() {
                   setForm({ to: '', subject: '', message: '' });
                   setSelectedRecipients([]);
                   setShowBulkMode(false);
-                  setIsMinimized(false);
-                  setIsMaximized(false);
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24">
@@ -1162,7 +1305,7 @@ export default function Mail() {
                   </div>
                   
                   {/* Dropdown button for bulk mode */}
-                  <div style={{ marginTop: '8px' }}>
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
                     <button 
                       type="button"
                       className="gmail-leads-dropdown-btn"
@@ -1196,6 +1339,33 @@ export default function Mail() {
                       </svg>
                       Select Recipients
                     </button>
+                    
+                    {groups.length > 0 && (
+                      <button 
+                        type="button"
+                        onClick={() => setShowGroupDropdown(!showGroupDropdown)}
+                        style={{
+                          background: 'linear-gradient(135deg, #34a853, #4caf50)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '10px 20px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          boxShadow: '0 2px 8px rgba(52, 168, 83, 0.3)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                          <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-1.7 2.26A6.44 6.44 0 0 0 12 10c-2.21 0-4 1.79-4 4v2h-2v6h2v2h12v-2h2z"/>
+                        </svg>
+                        Select Group
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -1297,6 +1467,38 @@ export default function Mail() {
                 </div>
               )}
               
+              {/* Groups Dropdown */}
+              {showGroupDropdown && (
+                <div className="gmail-leads-dropdown" style={{ zIndex: 1001 }}>
+                  <div className="gmail-leads-dropdown-header">
+                    <span>Select Group</span>
+                    <button 
+                      type="button"
+                      onClick={() => setShowGroupDropdown(false)}
+                      className="gmail-leads-dropdown-close"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="gmail-leads-dropdown-content">
+                    {groups.map((group) => (
+                      <div 
+                        key={group.id} 
+                        className="gmail-lead-email-item"
+                        onClick={() => selectGroup(group)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                          <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-1.7 2.26A6.44 6.44 0 0 0 12 10c-2.21 0-4 1.79-4 4v2h-2v6h2v2h12v-2h2z"/>
+                        </svg>
+                        <span>{group.name} ({group.emails.length} members)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {emailSuggestions.length > 0 && (
                 <div className="gmail-suggestions">
                   {emailSuggestions.map((email, idx) => (
@@ -1361,8 +1563,6 @@ export default function Mail() {
                     setForm({ to: '', subject: '', message: '' });
                     setSelectedRecipients([]);
                     setShowBulkMode(false);
-                    setIsMinimized(false);
-                    setIsMaximized(false);
                   }}
                 >
                   Discard
@@ -1370,6 +1570,194 @@ export default function Mail() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Groups Management Modal */}
+      {showGroupsModal && (
+        <div className="gmail-compose-modal" style={{ width: '600px', height: '700px' }}>
+          <div className="gmail-compose-header">
+            <div className="gmail-compose-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" style={{ marginRight: '8px' }}>
+                <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-1.7 2.26A6.44 6.44 0 0 0 12 10c-2.21 0-4 1.79-4 4v2h-2v6h2v2h12v-2h2z"/>
+              </svg>
+              <span>Manage User Groups</span>
+            </div>
+            <div className="gmail-compose-actions">
+              <button 
+                className="gmail-compose-close"
+                onClick={() => setShowGroupsModal(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ padding: '20px', overflow: 'auto', height: '100%' }}>
+
+            
+            {/* Create New Group */}
+            <div style={{ marginBottom: '30px', padding: '20px', border: '1px solid #e8eaed', borderRadius: '8px', background: '#f8f9fa' }}>
+              <h3 style={{ margin: '0 0 15px 0', color: '#202124' }}>Create New Group</h3>
+              <input
+                type="text"
+                placeholder="Enter group name"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #e8eaed',
+                  borderRadius: '4px',
+                  marginBottom: '15px',
+                  fontSize: '14px'
+                }}
+              />
+              
+              <div style={{ marginBottom: '15px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#5f6368' }}>
+                  Select Members: ({allLeadEmails.length} emails available)
+                </h4>
+                <div style={{ maxHeight: '150px', overflow: 'auto', border: '1px solid #e8eaed', borderRadius: '4px', background: 'white' }}>
+                  {allLeadEmails.length === 0 ? (
+                    <div style={{ padding: '12px', textAlign: 'center', color: '#5f6368', fontStyle: 'italic' }}>
+                      No emails available. Please check if the backend is running and has lead data.
+                    </div>
+                  ) : (
+                    allLeadEmails.map((email, idx) => {
+                      const isSelected = selectedGroupEmails.includes(email);
+                      
+                      return (
+                        <div 
+                          key={email}
+                          style={{
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #f1f3f4',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            background: isSelected ? '#e8f0fe' : 'transparent'
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleGroupEmail(email);
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleGroupEmail(email);
+                            }}
+                            style={{ margin: 0, cursor: 'pointer' }}
+                          />
+                          <span style={{ 
+                            fontSize: '14px', 
+                            fontWeight: isSelected ? '600' : '400',
+                            color: isSelected ? '#1a73e8' : '#202124'
+                          }}>
+                            {email}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              
+              <button
+                onClick={createGroup}
+                style={{
+                  background: '#1a73e8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Create Group
+              </button>
+              
+
+            </div>
+            
+            {/* Existing Groups */}
+            <div>
+              <h3 style={{ margin: '0 0 15px 0', color: '#202124' }}>Existing Groups</h3>
+              {loadingGroups ? (
+                <div style={{ textAlign: 'center', color: '#5f6368', padding: '20px' }}>
+                  <div style={{ display: 'inline-block', width: '20px', height: '20px', border: '2px solid #e8eaed', borderTop: '2px solid #1a73e8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  <div style={{ marginTop: '10px' }}>Loading groups...</div>
+                </div>
+              ) : groups.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#5f6368', fontStyle: 'italic', padding: '20px' }}>
+                  No groups created yet
+                </div>
+              ) : (
+                groups.map((group) => (
+                  <div 
+                    key={group.id}
+                    style={{
+                      padding: '15px',
+                      border: '1px solid #e8eaed',
+                      borderRadius: '8px',
+                      marginBottom: '10px',
+                      background: 'white'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <h4 style={{ margin: 0, color: '#202124' }}>{group.name}</h4>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => mailGroup(group)}
+                          style={{
+                            background: '#34a853',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '5px 10px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Mail Group
+                        </button>
+                        <button
+                          onClick={() => deleteGroup(group.id)}
+                          style={{
+                            background: '#ea4335',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '5px 10px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#5f6368', marginBottom: '8px' }}>
+                      {group.emails.length} members • Created {new Date(group.createdAt).toLocaleDateString()}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#5f6368' }}>
+                      {group.emails.slice(0, 3).join(', ')}
+                      {group.emails.length > 3 && ` +${group.emails.length - 3} more`}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 
